@@ -11,11 +11,12 @@ CMD 1 — Backend:
 
 open nyo CMD sa folder na name backend
 "npm start"
-
+--------------------------
 **Wait for [DB] Connected before opening the browser.**
 
 CMD 2 — Frontend:
 same din dito open cmd sa folder na name frontend
+
 python -m http.server 8080
 ------------------------------
 
