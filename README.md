@@ -7,18 +7,16 @@ gawa muna kayo mongoDB cloud na account tas chat nyoko sa gc para ma add ko kayo
 
 pag connected na kayo sa DB eto steps
 
-CMD 1 — Backend:
-
+**CMD 1 — Backend:**
 open nyo CMD sa folder na name backend
 "npm start"
---------------------------
-**Wait for [DB] Connected before opening the browser.**
 
-CMD 2 — Frontend:
+Wait for [DB] Connected before opening the browser.
+
+**CMD 2 — Frontend:**
 same din dito open cmd sa folder na name frontend
 
-python -m http.server 8080
-------------------------------
+"python -m http.server 8080"
 
 dalawang cmd yan bawal pag sabayin sa isang cmd
 
