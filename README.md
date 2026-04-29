@@ -8,7 +8,9 @@ gawa muna kayo mongoDB cloud na account tas chat nyoko sa gc para ma add ko kayo
 pag connected na kayo sa DB eto steps
 
 **CMD 1 — Backend:**
+
 open nyo CMD sa folder na name backend
+
 "npm start"
 
 Wait for [DB] Connected before opening the browser.
