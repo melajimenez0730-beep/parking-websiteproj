@@ -1,7 +1,3 @@
-// ════════════════════════════════════════════════════════════════
-//  confirm.js — Reservation Confirmation Page Logic
-// ════════════════════════════════════════════════════════════════
-
 const FEATURE_META = {
   entrance:   { icon: '🚪', label: 'Entrance' },
   exit:       { icon: '⬅️',  label: 'Exit' },
@@ -10,16 +6,14 @@ const FEATURE_META = {
 };
 
 export function initConfirm(ParkingAPI, toast) {
-  const LOCK_SECS = 3 * 60; // 180 seconds
+  const LOCK_SECS = 3 * 60;
 
-  // ─── Load reservation from sessionStorage ─────────────────────
   let reservation;
   try {
     reservation = JSON.parse(sessionStorage.getItem('reservation') || 'null');
   } catch { reservation = null; }
 
   if (!reservation) {
-    // No reservation in flight — redirect back
     toast('No active reservation found. Please select a spot first.', 'error');
     setTimeout(() => { window.location.href = 'map.html'; }, 2000);
     return;
@@ -27,7 +21,6 @@ export function initConfirm(ParkingAPI, toast) {
 
   const { spotId, spotNum, floor, row, col, features, lockId, expiresAt, userId } = reservation;
 
-  // ─── Populate spot info ───────────────────────────────────────
   const padNum   = String(spotNum).padStart(2, '0');
   const spotLabel = `P${padNum}`;
 
@@ -40,7 +33,6 @@ export function initConfirm(ParkingAPI, toast) {
     `<span class="pill pill-default" style="font-size:11px;">${FEATURE_META[f]?.icon || ''} ${FEATURE_META[f]?.label || f}</span>`
   ).join('');
 
-  // ─── Countdown Timer ──────────────────────────────────────────
   const timerEl    = document.getElementById('timer-display');
   const timerBar   = document.getElementById('timer-bar');
   const expireTime = new Date(expiresAt).getTime();
@@ -56,11 +48,9 @@ export function initConfirm(ParkingAPI, toast) {
 
     timerEl.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
 
-    // Progress bar
     const pct = (secsLeft / LOCK_SECS) * 100;
     timerBar.style.width = pct + '%';
 
-    // Color transitions
     timerEl.classList.remove('warn', 'urgent');
     timerBar.style.background = '';
 
@@ -86,7 +76,6 @@ export function initConfirm(ParkingAPI, toast) {
     document.getElementById('expired-overlay').classList.add('show');
   }
 
-  // ─── Form validation ──────────────────────────────────────────
   function getVehicleInfo() {
     const owner = document.getElementById('f-owner').value.trim();
     const plate = document.getElementById('f-plate').value.trim().toUpperCase();
@@ -99,7 +88,6 @@ export function initConfirm(ParkingAPI, toast) {
     return { owner, plate, type };
   }
 
-  // ─── Confirm Reservation ─────────────────────────────────────
   document.getElementById('confirm-btn').addEventListener('click', async () => {
     if (getSecsLeft() <= 0) { onLockExpired(); return; }
 
@@ -116,7 +104,6 @@ export function initConfirm(ParkingAPI, toast) {
       clearInterval(timerInterval);
       sessionStorage.removeItem('reservation');
 
-      // Persist confirmed reservation so "My Reservation" page can show it
       localStorage.setItem('ps_last_reservation', JSON.stringify({
         spotId,
         spotNum:       reservation.spotNum,
@@ -129,7 +116,6 @@ export function initConfirm(ParkingAPI, toast) {
         vehicle:       vehicleInfo,
       }));
 
-      // Show success overlay
       document.getElementById('success-txn').textContent = `Transaction ID: ${result.transactionId}`;
       document.getElementById('success-overlay').classList.add('show');
 
@@ -139,14 +125,12 @@ export function initConfirm(ParkingAPI, toast) {
       btn.textContent = '✓ Confirm Reservation';
 
       if (err.status === 410) {
-        // Lock expired server-side
         clearInterval(timerInterval);
         onLockExpired();
       }
     }
   });
 
-  // ─── Cancel ───────────────────────────────────────────────────
   document.getElementById('cancel-btn').addEventListener('click', async () => {
     const confirmed = window.confirm('Cancel this reservation? The spot will be released back to the pool.');
     if (!confirmed) return;
@@ -156,14 +140,13 @@ export function initConfirm(ParkingAPI, toast) {
     try {
       await ParkingAPI.release(spotId);
     } catch {
-      // Best-effort release; continue anyway
+      /* best-effort release */
     }
 
     sessionStorage.removeItem('reservation');
     window.location.href = 'map.html';
   });
 
-  // ─── Auto-expire check on page focus ─────────────────────────
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && getSecsLeft() <= 0) {
       clearInterval(timerInterval);

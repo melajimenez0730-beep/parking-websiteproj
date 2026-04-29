@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 
-// floor_number is the shard key – every query that includes it
-// routes to exactly one shard without scatter-gather overhead.
 const spotSchema = new mongoose.Schema(
   {
     spotId:       { type: String, required: true, unique: true },
-    floor_number: { type: Number, required: true, index: true }, // SHARD KEY
+    floor_number: { type: Number, required: true, index: true },
     row:          { type: Number, required: true },
     col:          { type: Number, required: true },
     spotNum:      { type: Number, required: true },
@@ -16,15 +14,14 @@ const spotSchema = new mongoose.Schema(
       default: 'available',
     },
 
-    features: [{ type: String }], // entrance | exit | grocery | disability
+    features: [{ type: String }],
 
     vehicle: {
       plate: String,
-      type:  { type: String }, // escape Mongoose 'type' keyword conflict
+      type:  { type: String },
       owner: String,
     },
 
-    // Soft-lock: holds the spot for 3 minutes during checkout
     softLock: {
       userId:    String,
       lockId:    String,
@@ -35,7 +32,6 @@ const spotSchema = new mongoose.Schema(
     reservedBy: String,
     occupiedAt: Date,
 
-    // Optimistic Concurrency Control version counter
     version: { type: Number, default: 0 },
   },
   { timestamps: true, collection: 'spots' }

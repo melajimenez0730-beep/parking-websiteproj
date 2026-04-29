@@ -4,9 +4,6 @@ const router     = express.Router();
 const ParkingSpot  = require('../models/ParkingSpot');
 const Transaction  = require('../models/Transaction');
 
-// Smart-selection priority orders (spotNum arrays, 1-indexed)
-// Grid layout: [P01][P02][P03][P04] / [P05][P06][P07][P08] / [P09][P10][P11][P12]
-// Entrance = top edge, Exit = bottom-left, Grocery = bottom-right, HC = P03,P04
 const PRIORITY = {
   entrance:   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   exit:       [9, 10, 5, 6, 1, 2, 11, 12, 7, 8, 3, 4],
@@ -14,9 +11,8 @@ const PRIORITY = {
   disability: [3, 4, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12],
 };
 
-const SOFT_LOCK_MS = 3 * 60 * 1000; // 3 minutes
+const SOFT_LOCK_MS = 3 * 60 * 1000;
 
-// Release expired soft locks so reads always reflect true availability
 async function releaseExpiredLocks() {
   const expired = await ParkingSpot.find({
     status: 'soft_locked',
@@ -39,7 +35,6 @@ async function releaseExpiredLocks() {
   }
 }
 
-// GET /api/parking/levels/:level/spots
 router.get('/levels/:level/spots', async (req, res) => {
   const level = parseInt(req.params.level);
   if (![1, 2, 3].includes(level)) {
@@ -56,7 +51,6 @@ router.get('/levels/:level/spots', async (req, res) => {
   }
 });
 
-// GET /api/parking/recommend?level=1&criteria=entrance
 router.get('/recommend', async (req, res) => {
   const level    = parseInt(req.query.level) || 1;
   const criteria = req.query.criteria || 'entrance';
@@ -78,14 +72,11 @@ router.get('/recommend', async (req, res) => {
   }
 });
 
-// POST /api/parking/spots/:spotId/soft-lock
-// Implements OCC: update only succeeds if version matches (no double-booking)
 router.post('/spots/:spotId/soft-lock', async (req, res) => {
   const { userId = 'guest', vehicleInfo } = req.body || {};
   const { spotId } = req.params;
 
   try {
-    // Defensive: don't let expired-lock cleanup break the main flow
     try { await releaseExpiredLocks(); } catch (e) { console.warn('[soft-lock] releaseExpiredLocks failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
@@ -133,7 +124,6 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
   }
 });
 
-// POST /api/parking/spots/:spotId/reserve  (confirm soft lock → reservation)
 router.post('/spots/:spotId/reserve', async (req, res) => {
   const { lockId, vehicleInfo } = req.body || {};
   const { spotId } = req.params;
@@ -185,7 +175,6 @@ router.post('/spots/:spotId/reserve', async (req, res) => {
   }
 });
 
-// POST /api/parking/spots/:spotId/occupy  (reserved → occupied)
 router.post('/spots/:spotId/occupy', async (req, res) => {
   const { spotId } = req.params;
   const { vehicleInfo } = req.body || {};
@@ -224,7 +213,6 @@ router.post('/spots/:spotId/occupy', async (req, res) => {
   }
 });
 
-// DELETE /api/parking/spots/:spotId/release
 router.delete('/spots/:spotId/release', async (req, res) => {
   const { spotId } = req.params;
 

@@ -1,5 +1,3 @@
-// Standalone seeder – run with: node scripts/seed.js
-// Also called automatically by mongo-init/init-shards.js inside Docker
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const mongoose   = require('mongoose');

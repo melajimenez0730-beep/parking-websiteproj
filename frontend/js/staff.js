@@ -1,7 +1,3 @@
-// ════════════════════════════════════════════════════════════════
-//  staff.js — Staff Dashboard Logic
-// ════════════════════════════════════════════════════════════════
-
 const TYPE_COLORS = {
   soft_lock: 'type-soft_lock',
   reserve:   'type-reserve',
@@ -34,11 +30,9 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
   const loginPage  = document.getElementById('login-page');
   const dashboard  = document.getElementById('dashboard');
 
-  // ── Check existing session ────────────────────────────────────
   const token = localStorage.getItem('staff_token');
   if (token) verifyAndShow();
 
-  // ── Login Form ────────────────────────────────────────────────
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn      = document.getElementById('login-btn');
@@ -78,7 +72,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     }
   }
 
-  // ── Show Dashboard ────────────────────────────────────────────
   function showDashboard(username) {
     loginPage.style.display = 'none';
     dashboard.classList.add('show');
@@ -93,7 +86,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     loadOverview();
   }
 
-  // ── Logout ────────────────────────────────────────────────────
   async function doLogout() {
     try { await AuthAPI.logout(); } catch { /* ignore */ }
     localStorage.removeItem('staff_token');
@@ -103,7 +95,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     loginPage.style.display = 'flex';
   }
 
-  // ── View Switching ────────────────────────────────────────────
   function showView(viewName) {
     currentView = viewName;
     ['overview', 'transactions', 'spots', 'analytics'].forEach(v => {
@@ -118,7 +109,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     if (viewName === 'spots')        loadSpots(currentSMFloor);
   }
 
-  // ── Burger Menu / Drawer ──────────────────────────────────────
   const drawer   = document.getElementById('drawer');
   const backdrop = document.getElementById('drawer-backdrop');
 
@@ -132,7 +122,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     });
   });
 
-  // ── Auto-refresh toggle ───────────────────────────────────────
   const arBtn   = document.getElementById('auto-refresh-btn');
   const arLabel = document.getElementById('ar-label');
 
@@ -159,7 +148,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     clearInterval(autoRefreshInt);
   }
 
-  // ── Transaction Filters ───────────────────────────────────────
   document.getElementById('apply-filter-btn').addEventListener('click', () => {
     filterFloor    = document.getElementById('f-floor').value;
     filterType     = document.getElementById('f-type').value;
@@ -184,7 +172,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     loadTransactions();
   });
 
-  // ── CSV Export ────────────────────────────────────────────────
   document.getElementById('export-csv-btn').addEventListener('click', async () => {
     const btn = document.getElementById('export-csv-btn');
     btn.disabled    = true;
@@ -200,7 +187,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     }
   });
 
-  // ── Load Overview ─────────────────────────────────────────────
   async function loadOverview() {
     try {
       const data = await StaffAPI.overview();
@@ -241,7 +227,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     }).join('');
   }
 
-  // ── Load Transactions ─────────────────────────────────────────
   async function loadTransactions() {
     const tbody = document.getElementById('txn-body');
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-4);"><div class="spinner" style="margin:0 auto;"></div></td></tr>`;
@@ -288,7 +273,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     `;
   }
 
-  // ── Pagination ────────────────────────────────────────────────
   function renderPagination(page, total) {
     const el = document.getElementById('pagination');
     if (total <= 1) { el.innerHTML = ''; return; }
@@ -315,7 +299,6 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ── Spot Management ───────────────────────────────────────────
   document.getElementById('sm-load-btn').addEventListener('click', () => {
     currentSMFloor = document.getElementById('sm-floor').value;
     loadSpots(currentSMFloor);
@@ -350,14 +333,12 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
         `;
       }).join('');
 
-      // Store spot list so __editSpot can look up by spotId
       window.__spotCache = spots;
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--red);">⚠ ${err.message}</td></tr>`;
     }
   }
 
-  // ── Spot Editor Modal ─────────────────────────────────────────
   const spotModal = document.getElementById('spot-editor-modal');
 
   window.__editSpot = (spotId) => {
@@ -407,12 +388,10 @@ export function initStaff(AuthAPI, StaffAPI, toast) {
     }
   });
 
-  // ── Analytics ─────────────────────────────────────────────────
   async function loadAnalytics() {
     try {
       const data = await StaffAPI.analytics();
 
-      // Summary stats
       const activity24h = data.typeStats.reduce((s, t) => s + t.count, 0);
       const availNow    = (data.currentStatus.find(s => s._id === 'available')    || {}).count || 0;
       const occupNow    = (data.currentStatus.find(s => s._id === 'occupied')     || {}).count || 0;

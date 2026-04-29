@@ -1,13 +1,9 @@
 const mongoose = require('mongoose');
 
-// floor_number is also the shard key here so transaction writes
-// land on the same shard as the corresponding spot document.
-// The staff dashboard does a scatter-gather across all 3 shards
-// to produce the unified transaction log.
 const transactionSchema = new mongoose.Schema(
   {
     transactionId: { type: String, required: true, unique: true },
-    floor_number:  { type: Number, required: true, index: true }, // SHARD KEY
+    floor_number:  { type: Number, required: true, index: true },
 
     spotId:  { type: String, required: true },
     spotNum: { type: Number, required: true },
@@ -20,7 +16,7 @@ const transactionSchema = new mongoose.Schema(
 
     vehicle: {
       plate: String,
-      type:  { type: String }, // escape Mongoose 'type' keyword conflict
+      type:  { type: String },
       owner: String,
     },
 

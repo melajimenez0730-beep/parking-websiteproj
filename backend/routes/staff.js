@@ -7,8 +7,6 @@ const { authenticateStaff } = require('../middleware/auth');
 
 router.use(authenticateStaff);
 
-// ── GET /api/staff/overview ──────────────────────────────────────────────────
-// Scatter-gather across all 3 shards via mongos aggregation
 router.get('/overview', async (req, res) => {
   try {
     const floorStats = await ParkingSpot.aggregate([
@@ -42,7 +40,6 @@ router.get('/overview', async (req, res) => {
   }
 });
 
-// ── GET /api/staff/transactions/export  (must be before /transactions route) ─
 router.get('/transactions/export', async (req, res) => {
   try {
     const filter = {};
@@ -88,7 +85,6 @@ router.get('/transactions/export', async (req, res) => {
   }
 });
 
-// ── GET /api/staff/transactions?page&limit&floor&type&dateFrom&dateTo ─────────
 router.get('/transactions', async (req, res) => {
   try {
     const page  = Math.max(1, parseInt(req.query.page)  || 1);
@@ -120,7 +116,6 @@ router.get('/transactions', async (req, res) => {
   }
 });
 
-// ── GET /api/staff/spots?floor= ──────────────────────────────────────────────
 router.get('/spots', async (req, res) => {
   try {
     const filter = req.query.floor ? { floor_number: parseInt(req.query.floor) } : {};
@@ -131,7 +126,6 @@ router.get('/spots', async (req, res) => {
   }
 });
 
-// ── PATCH /api/staff/spots/:spotId  — manual status override ─────────────────
 router.patch('/spots/:spotId', async (req, res) => {
   const { spotId } = req.params;
   const { status, notes } = req.body || {};
@@ -182,10 +176,9 @@ router.patch('/spots/:spotId', async (req, res) => {
   }
 });
 
-// ── GET /api/staff/analytics ─────────────────────────────────────────────────
 router.get('/analytics', async (req, res) => {
   try {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24 h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [hourlyData, typeStats, currentStatus] = await Promise.all([
       Transaction.aggregate([

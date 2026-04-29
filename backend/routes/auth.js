@@ -6,7 +6,6 @@ const SECRET = process.env.JWT_SECRET   || 'changeme_in_production_32chars';
 const VALID_USER = process.env.STAFF_USERNAME || 'admin';
 const VALID_PASS = process.env.STAFF_PASSWORD || 'admin123';
 
-// POST /api/auth/login
 router.post('/login', (req, res) => {
   const { username, password } = req.body || {};
 
@@ -23,12 +22,10 @@ router.post('/login', (req, res) => {
   res.json({ token, role: 'staff', username });
 });
 
-// POST /api/auth/logout  (JWT is stateless – client discards the token)
 router.post('/logout', (_req, res) => {
   res.json({ success: true });
 });
 
-// GET /api/auth/verify
 router.get('/verify', (req, res) => {
   const header = req.headers.authorization;
 

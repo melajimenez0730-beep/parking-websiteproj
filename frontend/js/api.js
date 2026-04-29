@@ -1,4 +1,3 @@
-// ─── API Client ──────────────────────────────────────────────────────
 const API_BASE = 'http://localhost:3000/api';
 
 async function request(method, path, body = null, auth = false) {
@@ -25,7 +24,6 @@ async function request(method, path, body = null, auth = false) {
   return data;
 }
 
-// ─── Parking API ──────────────────────────────────────────────────
 export const ParkingAPI = {
   getSpots: (level) =>
     request('GET', `/parking/levels/${level}/spots`),
@@ -46,7 +44,6 @@ export const ParkingAPI = {
     request('DELETE', `/parking/spots/${spotId}/release`),
 };
 
-// ─── Auth API ─────────────────────────────────────────────────────
 export const AuthAPI = {
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }),
@@ -58,7 +55,6 @@ export const AuthAPI = {
     request('GET', '/auth/verify', null, true),
 };
 
-// ─── Staff API ────────────────────────────────────────────────────
 export const StaffAPI = {
   overview: () =>
     request('GET', '/staff/overview', null, true),
@@ -109,7 +105,6 @@ export const StaffAPI = {
     request('GET', '/staff/analytics', null, true),
 };
 
-// ─── Toast utility ───────────────────────────────────────────────
 export function toast(message, type = 'info', duration = 3500) {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -134,7 +129,6 @@ export function toast(message, type = 'info', duration = 3500) {
   }, duration);
 }
 
-// ─── Theme helper (shared across pages) ─────────────────────────
 export function initTheme() {
   const saved = localStorage.getItem('ps_theme') || 'dark';
   if (saved === 'light') document.body.classList.add('light-mode');

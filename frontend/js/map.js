@@ -1,9 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-//  map.js — Parking Lot Map (two-bank layout + reserve modal)
-// ═══════════════════════════════════════════════════════════════
-
-// Left bank: spots 1,2 / 5,6 / 9,10   (entrance, middle, exit)
-// Right bank: spots 3,4 / 7,8 / 11,12  (HC entrance, middle, grocery)
 const LEFT_BANK  = [[1,2],[5,6],[9,10]];
 const RIGHT_BANK = [[3,4],[7,8],[11,12]];
 
@@ -22,28 +16,18 @@ const STATUS_LABEL = {
 
 const FEATURE_ICONS = { entrance:'🚪', exit:'⬅️', grocery:'🛒', disability:'♿' };
 
-// Top-down car SVG (left bank faces right, right bank faces left)
 function carSVG(color, flip = false) {
-  const t = flip ? 'transform="scale(-1,1) translate(-40,0)"' : '';
   return `<svg class="car-svg" viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg" ${flip ? 'style="transform:scaleX(-1)"' : ''}>
-    <!-- Body -->
     <rect x="4" y="8" width="32" height="56" rx="8" fill="${color}" opacity="0.9"/>
-    <!-- Windshield -->
     <rect x="8" y="14" width="24" height="16" rx="4" fill="rgba(0,0,0,0.45)"/>
-    <!-- Rear window -->
     <rect x="8" y="44" width="24" height="13" rx="3" fill="rgba(0,0,0,0.35)"/>
-    <!-- Roof line -->
     <rect x="10" y="30" width="20" height="14" rx="2" fill="${color}" opacity="0.6"/>
-    <!-- Front wheels -->
     <rect x="0"  y="12" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
     <rect x="34" y="12" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <!-- Rear wheels -->
     <rect x="0"  y="46" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
     <rect x="34" y="46" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <!-- Headlights -->
     <rect x="8"  y="8" width="8" height="5" rx="2" fill="rgba(255,230,100,0.8)"/>
     <rect x="24" y="8" width="8" height="5" rx="2" fill="rgba(255,230,100,0.8)"/>
-    <!-- Tail lights -->
     <rect x="8"  y="63" width="8" height="5" rx="2" fill="rgba(255,80,80,0.9)"/>
     <rect x="24" y="63" width="8" height="5" rx="2" fill="rgba(255,80,80,0.9)"/>
   </svg>`;
@@ -61,7 +45,6 @@ export function initMap(ParkingAPI, toast) {
   let currentCriteria = 'entrance';
   let selectedSpot   = null;
 
-  // ── DOM refs ──
   const gridWrap    = document.getElementById('lot-grid-wrap');
   const bottomStrip = document.getElementById('bottom-strip');
   const lotTitle    = document.getElementById('lot-title');
@@ -72,7 +55,6 @@ export function initMap(ParkingAPI, toast) {
   const availBadge  = document.getElementById('avail-badge');
   const shardInfo   = document.getElementById('shard-info');
 
-  // Modal refs
   const modalBackdrop = document.getElementById('reserve-modal');
   const mBadge     = document.getElementById('m-badge');
   const mTitle     = document.getElementById('m-title');
@@ -85,7 +67,6 @@ export function initMap(ParkingAPI, toast) {
   const mReserveBtn = document.getElementById('m-reserve-btn');
   const mCancelBtn  = document.getElementById('m-cancel-btn');
 
-  // ── Level tabs ──
   document.querySelectorAll('.level-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.level-tab').forEach(t => t.classList.remove('active'));
@@ -95,7 +76,6 @@ export function initMap(ParkingAPI, toast) {
     });
   });
 
-  // ── Smart filter chips ──
   document.querySelectorAll('.filter-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -106,14 +86,11 @@ export function initMap(ParkingAPI, toast) {
     });
   });
 
-  // ── Refresh ──
   document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentLevel, true));
 
-  // ── Modal close ──
   mCancelBtn.addEventListener('click', closeModal);
   modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
 
-  // ── Modal reserve ──
   mReserveBtn.addEventListener('click', async () => {
     if (!selectedSpot) return;
     mReserveBtn.disabled = true;
@@ -145,11 +122,9 @@ export function initMap(ParkingAPI, toast) {
     }
   });
 
-  // ── Initial load ──
   loadFloor(1);
   setInterval(() => loadFloor(currentLevel), 30000);
 
-  // ════════════════════════════════════════════════════════════
   async function loadFloor(level, showSpinner = false) {
     if (showSpinner) {
       gridWrap.innerHTML = '<div class="lot-loading"><div class="spinner"></div> Refreshing…</div>';
@@ -182,7 +157,6 @@ export function initMap(ParkingAPI, toast) {
     availBadge.style.display = 'inline-flex';
   }
 
-  // ── Render the two-bank parking lot layout ──
   function renderLot(spots) {
     const map = {};
     spots.forEach(s => { map[s.spotNum] = s; });
@@ -236,7 +210,6 @@ export function initMap(ParkingAPI, toast) {
 
     bottomStrip.style.display = 'flex';
 
-    // Bind click events
     gridWrap.querySelectorAll('.pspot').forEach(el => {
       el.addEventListener('click', () => handleSpotClick(el));
     });
@@ -258,7 +231,6 @@ export function initMap(ParkingAPI, toast) {
     openModal(spot);
   }
 
-  // ── Modal ──
   function openModal(spot) {
     const pad = String(spot.spotNum).padStart(2, '0');
     mBadge.textContent  = `P${pad}`;
@@ -284,13 +256,10 @@ export function initMap(ParkingAPI, toast) {
     selectedSpot = null;
   }
 
-  // ── Highlight recommended spots ──
   function applyHighlights() {
-    // Highlights disabled — recommendations shown in the bar below instead
     gridWrap.querySelectorAll('.pspot').forEach(el => el.classList.remove('highlighted'));
   }
 
-  // ── Recommendations bar ──
   async function loadRecommendations() {
     const bar = document.getElementById('recommend-bar');
     try {
