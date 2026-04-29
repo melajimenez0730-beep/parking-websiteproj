@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart — My Reservation</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .res-layout {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .res-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+    }
+
+    .res-card-top {
+      padding: 28px 28px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .res-spot-badge {
+      width: 64px;
+      height: 64px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: var(--r-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .res-spot-badge.confirmed { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+
+    .res-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .res-detail-cell {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-sm);
+      padding: 12px;
+    }
+
+    .res-detail-label { font-size: 11px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    .res-detail-value { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-mono); }
+
+    .res-vehicle-section {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .res-vehicle-title {
+      font-size: 12px;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .res-vehicle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      padding: 4px 0;
+    }
+
+    .res-vehicle-row span:first-child { color: var(--text-3); }
+    .res-vehicle-row span:last-child  { color: var(--text-1); font-family: var(--font-mono); font-weight: 500; }
+
+    .res-footer {
+      display: flex;
+      gap: 10px;
+      padding: 20px 28px;
+      background: var(--bg-surface);
+    }
+
+    .txn-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-sm);
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-4);
+      word-break: break-all;
+      margin: 16px 28px;
+    }
+
+    .status-confirmed {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--r-full);
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 500px) {
+      .res-detail-grid { grid-template-columns: 1fr; }
+      .res-card-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">P</div>
+        ParkSmart
+      </a>
+      <div class="nav-links">
+        <button class="theme-toggle" id="theme-toggle-btn">☀️</button>
+        <a href="map.html" class="btn btn-ghost btn-sm">← Map</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="res-layout">
+
+    <div style="margin-bottom:24px;">
+      <div style="font-size:12px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Parking Status</div>
+      <h1 style="font-size:26px;font-weight:700;letter-spacing:-0.5px;">My Reservation</h1>
+      <p style="font-size:14px;color:var(--text-3);margin-top:6px;">Your current or most recent parking reservation.</p>
+    </div>
+
+    <div id="page-content">
+      <div class="res-card" style="padding:64px 24px;text-align:center;">
+        <div class="spinner" style="margin:0 auto;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { ParkingAPI, toast, initTheme } from './js/api.js';
+    initTheme();
+
+    const FEATURE_ICONS = { entrance:'🚪', exit:'⬅️', grocery:'🛒', disability:'♿' };
+    const VEHICLE_LABELS = { car:'Car / Sedan', suv:'SUV / Van', motorcycle:'Motorcycle', truck:'Truck / Pickup', disabled:'Disabled Vehicle' };
+
+    function render() {
+      // If there's an in-progress soft lock, redirect to confirm
+      const active = sessionStorage.getItem('reservation');
+      if (active) {
+        window.location.href = 'confirm.html';
+        return;
+      }
+
+      // Show last confirmed reservation
+      let res;
+      try { res = JSON.parse(localStorage.getItem('ps_last_reservation') || 'null'); } catch { res = null; }
+
+      const el = document.getElementById('page-content');
+
+      if (!res) {
+        el.innerHTML = `
+          <div class="res-card" style="text-align:center;padding:64px 24px;">
+            <div style="font-size:48px;margin-bottom:16px;opacity:0.4;">🅿️</div>
+            <div style="font-size:20px;font-weight:600;color:var(--text-2);margin-bottom:8px;">No Reservation Found</div>
+            <p style="font-size:14px;color:var(--text-3);margin-bottom:24px;">You don't have any recent reservations. Head to the map to find and reserve a spot.</p>
+            <a href="map.html" class="btn btn-primary">Find a Spot →</a>
+          </div>
+        `;
+        return;
+      }
+
+      const pad        = String(res.spotNum).padStart(2, '0');
+      const confirmedAt = res.confirmedAt ? new Date(res.confirmedAt).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+      const features   = (res.features || []).map(f => `<span class="pill pill-default" style="font-size:11px;">${FEATURE_ICONS[f] || ''} ${f}</span>`).join('') || '<span style="font-size:12px;color:var(--text-4);">None</span>';
+      const vType      = VEHICLE_LABELS[res.vehicle?.type] || res.vehicle?.type || '—';
+
+      el.innerHTML = `
+        <div class="res-card">
+          <div class="res-card-top">
+            <div class="res-spot-badge confirmed">P${pad}</div>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                <span style="font-size:20px;font-weight:700;color:var(--text-1);">Spot P${pad}</span>
+                <span class="status-confirmed">✓ Confirmed</span>
+              </div>
+              <div style="font-size:14px;color:var(--text-3);">Floor ${res.floor} · Row ${res.row} · Column ${res.col}</div>
+              <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">${features}</div>
+            </div>
+          </div>
+
+          <div class="res-detail-grid">
+            <div class="res-detail-cell">
+              <div class="res-detail-label">Floor Level</div>
+              <div class="res-detail-value">${res.floor}</div>
+            </div>
+            <div class="res-detail-cell">
+              <div class="res-detail-label">Spot Number</div>
+              <div class="res-detail-value">P${pad}</div>
+            </div>
+            <div class="res-detail-cell">
+              <div class="res-detail-label">Position</div>
+              <div class="res-detail-value">R${res.row} · C${res.col}</div>
+            </div>
+            <div class="res-detail-cell">
+              <div class="res-detail-label">Confirmed At</div>
+              <div class="res-detail-value" style="font-size:12px;">${confirmedAt}</div>
+            </div>
+          </div>
+
+          <div class="res-vehicle-section">
+            <div class="res-vehicle-title">🚗 Vehicle Information</div>
+            <div class="res-vehicle-row"><span>Owner</span><span>${res.vehicle?.owner || '—'}</span></div>
+            <div class="res-vehicle-row"><span>Plate</span><span>${res.vehicle?.plate || '—'}</span></div>
+            <div class="res-vehicle-row"><span>Type</span><span>${vType}</span></div>
+          </div>
+
+          <div class="txn-box">Transaction ID: ${res.transactionId || '—'}</div>
+
+          <div class="res-footer">
+            <button class="btn btn-danger btn-sm" id="clear-btn">Clear Record</button>
+            <a href="map.html" class="btn btn-primary btn-full">Reserve Another Spot →</a>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-faint);border-radius:var(--r-md);font-size:13px;color:var(--text-3);line-height:1.6;">
+          <strong style="color:var(--text-2);">Note:</strong> This is your last confirmed reservation. If you need to report a problem, show the Transaction ID to parking staff.
+        </div>
+      `;
+
+      document.getElementById('clear-btn').addEventListener('click', () => {
+        if (!confirm('Remove this reservation record from your device?')) return;
+        localStorage.removeItem('ps_last_reservation');
+        toast('Reservation record cleared.', 'info');
+        render();
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

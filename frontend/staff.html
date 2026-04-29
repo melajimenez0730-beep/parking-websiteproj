@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart — Staff Dashboard</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Login page ── */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(232,123,61,0.08) 0%, transparent 60%);
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--r-xl);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-xl);
+    }
+    .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .login-title { font-size: 22px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+    .login-sub   { font-size: 14px; color: var(--text-3); margin-bottom: 28px; }
+    .login-error {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+
+    /* ── Dashboard layout ── */
+    .dashboard { display: none; min-height: 100vh; }
+    .dashboard.show { display: block; }
+    .dash-nav {
+      position: sticky; top: 0; z-index: 100;
+      height: var(--nav-h);
+      display: flex; align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(20px);
+    }
+    .dash-nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; max-width: var(--max-w); margin: 0 auto; padding: 0 24px; gap: 16px;
+    }
+    .dash-nav-left  { display: flex; align-items: center; gap: 16px; }
+    .dash-nav-right { display: flex; align-items: center; gap: 10px; }
+    .user-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px;
+      border-radius: var(--r-full);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      font-size: 13px; color: var(--text-2);
+    }
+    .user-chip .avatar {
+      width: 22px; height: 22px;
+      background: var(--accent-dim); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: var(--accent); font-weight: 600;
+    }
+    .dash-body {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 28px 24px;
+    }
+    .dash-section-title {
+      font-size: 15px; font-weight: 600; color: var(--text-1);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .dash-section-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: var(--r-full);
+      background: var(--accent-dim); color: var(--accent); font-weight: 500;
+    }
+
+    /* Floor breakdown */
+    .floor-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 640px) { .floor-breakdown { grid-template-columns: 1fr; } }
+    .floor-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: 16px; }
+    .floor-card-title {
+      font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-4); margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .floor-stat-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; color: var(--text-3); }
+    .floor-stat-val { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+    .floor-stat-val.green { color: var(--green); }
+    .floor-stat-val.amber { color: var(--amber); }
+    .floor-stat-val.red   { color: var(--red); }
+
+    /* Filters bar */
+    .filters-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-select {
+      padding: 7px 28px 7px 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-sm);
+      color: var(--text-2);
+      font-size: 13px; font-family: var(--font); cursor: pointer;
+      transition: all var(--t-base); outline: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236E6E88' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    .filter-select:focus { border-color: var(--accent-border); color: var(--text-1); }
+    .filter-date {
+      padding: 7px 10px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-sm);
+      color: var(--text-2);
+      font-size: 13px; font-family: var(--font); outline: none;
+      transition: border-color var(--t-base);
+      color-scheme: dark;
+    }
+    body.light-mode .filter-date { color-scheme: light; }
+    .filter-date:focus { border-color: var(--accent-border); }
+    .filter-label { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+
+    /* Txn card */
+    .txn-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-lg); overflow: hidden; }
+    .txn-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap; gap: 10px;
+    }
+    .txn-total { font-size: 13px; color: var(--text-3); }
+    .txn-total strong { color: var(--text-2); }
+    .shard-note {
+      font-size: 11px; color: var(--text-4); font-family: var(--font-mono);
+      background: var(--bg-input); border: 1px solid var(--border-faint);
+      border-radius: var(--r-sm); padding: 3px 8px;
+    }
+
+    /* Type badges */
+    .type-badge {
+      padding: 2px 8px; border-radius: var(--r-full);
+      font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .type-soft_lock { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+    .type-reserve   { background: var(--green-bg);  color: var(--green); border: 1px solid var(--green-border); }
+    .type-occupy    { background: var(--blue-bg);   color: var(--blue);  border: 1px solid var(--blue-border); }
+    .type-release   { background: var(--bg-input);  color: var(--text-3); border: 1px solid var(--border-subtle); }
+    .type-expire    { background: var(--red-bg);    color: var(--red);   border: 1px solid var(--red-border); }
+
+    /* Auto-refresh toggle */
+    .auto-refresh-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-input); color: var(--text-3);
+      font-size: 12px; cursor: pointer; transition: all var(--t-base); font-family: var(--font);
+    }
+    .auto-refresh-btn:hover { color: var(--text-2); border-color: var(--border-default); }
+    .auto-refresh-btn.on { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+    .auto-refresh-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .auto-refresh-btn.on .auto-refresh-dot { animation: pulse-dot 1.5s ease infinite; }
+
+    /* Spot editor modal */
+    .spot-modal-backdrop {
+      position: fixed; inset: 0;
+      background: var(--bg-overlay);
+      z-index: 300;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+    }
+    .spot-modal-backdrop.open { display: flex; }
+
+    /* View sections */
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Stats row with gap */
+    .dash-body > .view-section > * + * { margin-top: 24px; }
+
+    @media (max-width: 600px) {
+      .filters-bar { gap: 6px; }
+      .filter-date { width: 130px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Drawer ─────────────────────────────────────────────────────── -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <div class="drawer-panel">
+      <div class="logo" style="margin-bottom:24px;">
+        <div class="logo-icon">P</div>
+        ParkSmart
+      </div>
+      <div class="divider" style="margin-bottom:16px;"></div>
+
+      <div class="drawer-nav-item active" data-view="overview"><span class="icon">📊</span> Overview</div>
+      <div class="drawer-nav-item" data-view="transactions"><span class="icon">📋</span> Transactions</div>
+      <div class="drawer-nav-item" data-view="spots"><span class="icon">🅿️</span> Spot Management</div>
+      <div class="drawer-nav-item" data-view="analytics"><span class="icon">📈</span> Analytics</div>
+
+      <div class="divider" style="margin:16px 0;"></div>
+      <div style="font-size:11px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.5px;padding:4px 14px;margin-bottom:8px;">Shards</div>
+      <div class="drawer-nav-item" style="font-size:13px;"><span class="icon">⬡</span> Shard 1 · Floor 1</div>
+      <div class="drawer-nav-item" style="font-size:13px;"><span class="icon">⬡</span> Shard 2 · Floor 2</div>
+      <div class="drawer-nav-item" style="font-size:13px;"><span class="icon">⬡</span> Shard 3 · Floor 3</div>
+
+      <div style="margin-top:auto;padding-top:24px;">
+        <button class="btn btn-ghost btn-full btn-sm" id="drawer-logout">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Spot Editor Modal ─────────────────────────────────────────── -->
+  <div class="spot-modal-backdrop" id="spot-editor-modal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-title" id="se-title">Edit Spot P01</div>
+      <div class="modal-sub"   id="se-sub">Floor 1 · Row 1 · Col 1</div>
+
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">New Status</label>
+        <select class="form-select" id="se-status">
+          <option value="available">✅ Available</option>
+          <option value="reserved">🟡 Reserved</option>
+          <option value="occupied">🔴 Occupied</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:24px;">
+        <label class="form-label">Notes (optional)</label>
+        <input class="form-input" id="se-notes" type="text" placeholder="Reason for change…">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="se-cancel" style="min-width:80px;">Cancel</button>
+        <button class="btn btn-primary btn-full" id="se-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Login Form ─────────────────────────────────────────────────── -->
+  <div class="login-page" id="login-page">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">P</div>
+        <span style="font-weight:700;font-size:18px;">ParkSmart</span>
+      </div>
+      <div class="login-title">Staff Access</div>
+      <p class="login-sub">Sign in with your staff credentials to access the management dashboard.</p>
+      <div class="login-error" id="login-error">Invalid username or password.</div>
+      <form id="login-form" style="display:flex;flex-direction:column;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="l-username" type="text" placeholder="admin" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" id="l-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primary btn-full" type="submit" id="login-btn" style="margin-top:8px;">Sign In</button>
+      </form>
+      <div style="margin-top:20px;text-align:center;">
+        <a href="index.html" style="font-size:13px;color:var(--text-4);">← Back to Home</a>
+      </div>
+      <div style="margin-top:24px;padding:12px;background:var(--bg-surface);border:1px solid var(--border-faint);border-radius:var(--r-sm);font-size:12px;color:var(--text-4);text-align:center;">
+        Demo: username <code style="font-family:var(--font-mono);color:var(--accent)">admin</code> · password <code style="font-family:var(--font-mono);color:var(--accent)">admin123</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+  <div class="dashboard" id="dashboard">
+
+    <!-- Dash Nav -->
+    <nav class="dash-nav">
+      <div class="dash-nav-inner">
+        <div class="dash-nav-left">
+          <button class="burger-btn" id="burger-btn"><span></span><span></span><span></span></button>
+          <a href="index.html" class="logo">
+            <div class="logo-icon">P</div>
+            ParkSmart
+          </a>
+          <div class="badge" style="font-size:11px;">Staff</div>
+        </div>
+        <div class="dash-nav-right">
+          <button class="auto-refresh-btn" id="auto-refresh-btn">
+            <span class="auto-refresh-dot"></span>
+            <span id="ar-label">Auto-refresh Off</span>
+          </button>
+          <button class="theme-toggle" id="theme-toggle-btn">☀️</button>
+          <div class="user-chip">
+            <div class="avatar" id="user-avatar">A</div>
+            <span id="user-name">admin</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="logout-btn">Sign Out</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="dash-body">
+
+      <!-- ── VIEW: Overview ── -->
+      <div class="view-section active" id="view-overview">
+        <div style="margin-bottom:24px;">
+          <div class="dash-section-title">
+            📊 Live Overview
+            <span class="dash-section-badge">Cross-shard aggregate</span>
+          </div>
+          <div class="stat-grid" id="stat-grid">
+            <div class="stat-card"><div class="stat-card-label">Total Spots</div><div class="stat-card-value accent" id="s-total">—</div></div>
+            <div class="stat-card"><div class="stat-card-label">Available</div><div class="stat-card-value green" id="s-available">—</div></div>
+            <div class="stat-card"><div class="stat-card-label">Reserved / Held</div><div class="stat-card-value amber" id="s-reserved">—</div></div>
+            <div class="stat-card"><div class="stat-card-label">Occupied</div><div class="stat-card-value red" id="s-occupied">—</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="dash-section-title">🗂️ By Floor (Shard)</div>
+          <div class="floor-breakdown" id="floor-breakdown">
+            <div class="floor-card skeleton" style="height:120px;"></div>
+            <div class="floor-card skeleton" style="height:120px;"></div>
+            <div class="floor-card skeleton" style="height:120px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Transactions ── -->
+      <div class="view-section" id="view-transactions">
+        <div class="dash-section-title">
+          📋 Transaction Log
+          <span class="dash-section-badge">Scatter-gather · All shards</span>
+        </div>
+
+        <div class="filters-bar" style="margin-bottom:14px;">
+          <span class="filter-label">Filter:</span>
+          <select class="filter-select" id="f-floor">
+            <option value="">All Floors</option>
+            <option value="1">Floor 1 (Shard 1)</option>
+            <option value="2">Floor 2 (Shard 2)</option>
+            <option value="3">Floor 3 (Shard 3)</option>
+          </select>
+          <select class="filter-select" id="f-type">
+            <option value="">All Types</option>
+            <option value="soft_lock">Soft Lock</option>
+            <option value="reserve">Reserved</option>
+            <option value="occupy">Occupied</option>
+            <option value="release">Released</option>
+            <option value="expire">Expired</option>
+          </select>
+          <input type="date" class="filter-date" id="f-date-from" title="From date">
+          <input type="date" class="filter-date" id="f-date-to"   title="To date">
+          <button class="btn btn-secondary btn-sm" id="apply-filter-btn">Apply</button>
+          <button class="btn btn-ghost btn-sm" id="reset-filter-btn">Reset</button>
+        </div>
+
+        <div class="txn-card">
+          <div class="txn-card-header">
+            <div>
+              <div class="dash-section-title" style="margin-bottom:2px;font-size:14px;">All Transactions</div>
+              <div class="txn-total" id="txn-total">Showing — of — records</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="shard-note">mongos scatter-gather</div>
+              <button class="btn btn-ghost btn-sm" id="export-csv-btn">⬇ Export CSV</button>
+              <button class="btn btn-secondary btn-sm" id="refresh-txn-btn">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="txn-table">
+              <thead>
+                <tr>
+                  <th>Transaction ID</th>
+                  <th>Floor / Shard</th>
+                  <th>Spot</th>
+                  <th>Type</th>
+                  <th>Owner</th>
+                  <th>Plate</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="txn-body">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-4);">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Spot Management ── -->
+      <div class="view-section" id="view-spots">
+        <div class="dash-section-title">
+          🅿️ Spot Management
+          <span class="dash-section-badge">Direct CRUD override</span>
+        </div>
+
+        <div class="spot-mgmt-controls">
+          <span class="filter-label">Floor:</span>
+          <select class="filter-select" id="sm-floor">
+            <option value="">All Floors</option>
+            <option value="1">Floor 1</option>
+            <option value="2">Floor 2</option>
+            <option value="3">Floor 3</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="sm-load-btn">Load Spots</button>
+          <button class="btn btn-ghost btn-sm" id="sm-refresh-btn">↻ Refresh</button>
+        </div>
+
+        <div class="txn-card">
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Spot</th>
+                  <th>Floor / Shard</th>
+                  <th>Position</th>
+                  <th>Features</th>
+                  <th>Status</th>
+                  <th>Owner</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="sm-body">
+                <tr><td colspan="7" style="text-align:center;padding:48px;color:var(--text-4);">Select a floor and click Load Spots.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Analytics ── -->
+      <div class="view-section" id="view-analytics">
+        <div class="dash-section-title">
+          📈 Analytics
+          <span class="dash-section-badge">Last 24 hours</span>
+        </div>
+
+        <div class="stat-grid" style="margin-bottom:20px;" id="analytics-stat-grid">
+          <div class="stat-card"><div class="stat-card-label">Total Transactions (all time)</div><div class="stat-card-value accent" id="a-total">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">Activity (last 24h)</div><div class="stat-card-value" id="a-24h">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">Currently Available</div><div class="stat-card-value green" id="a-avail">—</div></div>
+          <div class="stat-card"><div class="stat-card-label">Currently Occupied</div><div class="stat-card-value red" id="a-occup">—</div></div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="chart-card">
+            <div class="chart-card-title">Activity by Hour (last 24h)</div>
+            <canvas id="hourly-chart" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-card-title">Current Spot Status</div>
+            <canvas id="status-chart" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card" style="margin-top:16px;">
+          <div class="chart-card-title">Transaction Types (last 24h)</div>
+          <canvas id="type-chart" height="120"></canvas>
+        </div>
+      </div>
+
+    </div><!-- end dash-body -->
+  </div><!-- end dashboard -->
+
+  <script type="module">
+    import { AuthAPI, StaffAPI, toast, initTheme } from './js/api.js';
+    import { initStaff } from './js/staff.js';
+    initTheme();
+    initStaff(AuthAPI, StaffAPI, toast);
+  </script>
+</body>
+</html>

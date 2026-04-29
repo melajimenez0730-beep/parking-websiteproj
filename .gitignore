@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Environment variables (contains DB credentials — never commit this)
+.env
+backend/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+mongo-data/
+
+# Claude Code internal settings
+.claude/
+
+# IDE
+.vscode/
+.idea/

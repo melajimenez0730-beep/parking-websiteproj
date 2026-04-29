@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart — Confirm Reservation</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .confirm-layout {
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    .confirm-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-default);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+    }
+
+    .confirm-top {
+      padding: 32px 32px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .spot-badge-large {
+      width: 72px;
+      height: 72px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--r-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .confirm-spot-info { flex: 1; }
+    .confirm-spot-title { font-size: 22px; font-weight: 700; color: var(--text-1); letter-spacing: -0.5px; }
+    .confirm-spot-sub   { font-size: 14px; color: var(--text-3); margin-top: 4px; }
+
+    .timer-section {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-subtle);
+      text-align: center;
+      background: radial-gradient(ellipse at center, rgba(232,123,61,0.05) 0%, transparent 70%);
+    }
+
+    .timer-label-top {
+      font-size: 12px;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .timer-big {
+      font-family: var(--font-mono);
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -2px;
+      color: var(--green);
+      transition: color 0.5s ease;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-big.warn   { color: var(--amber); }
+    .timer-big.urgent { color: var(--red); animation: blink 0.6s ease infinite alternate; }
+
+    @keyframes blink {
+      from { opacity: 1; }
+      to   { opacity: 0.4; }
+    }
+
+    .timer-sub {
+      font-size: 13px;
+      color: var(--text-3);
+      margin-top: 6px;
+    }
+
+    .timer-bar-track {
+      height: 3px;
+      background: var(--border-subtle);
+      border-radius: 2px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .timer-bar-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width 1s linear, background 0.5s ease;
+      width: 100%;
+    }
+
+    .form-section {
+      padding: 28px 32px;
+    }
+
+    .form-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    @media (max-width: 500px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .confirm-top { flex-direction: column; }
+      .timer-big { font-size: 42px; }
+    }
+
+    .confirm-footer {
+      padding: 24px 32px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 12px;
+      background: var(--bg-surface);
+    }
+
+    /* Success state */
+    .success-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+    .success-overlay.show { display: flex; }
+
+    .success-card {
+      background: var(--bg-card);
+      border: 1px solid var(--green-border);
+      border-radius: var(--r-xl);
+      padding: 48px 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-xl), var(--green-glow);
+      animation: modal-in 0.25s ease;
+    }
+
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 24px;
+    }
+
+    .success-title { font-size: 26px; font-weight: 700; color: var(--text-1); margin-bottom: 10px; }
+    .success-sub   { font-size: 15px; color: var(--text-3); line-height: 1.6; margin-bottom: 24px; }
+
+    .txn-id {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-4);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-sm);
+      padding: 8px 14px;
+      margin-bottom: 28px;
+      word-break: break-all;
+    }
+
+    /* Expired overlay */
+    .expired-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg-overlay);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+    .expired-overlay.show { display: flex; }
+  </style>
+</head>
+<body>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="success-overlay">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Reservation Confirmed!</div>
+      <p class="success-sub">Your parking spot has been reserved. Please proceed to the parking facility.</p>
+      <div class="txn-id" id="success-txn">Transaction ID: —</div>
+      <div style="display:flex;gap:12px;">
+        <a href="map.html" class="btn btn-secondary btn-full">Reserve Another</a>
+        <a href="index.html" class="btn btn-primary btn-full">Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expired Overlay -->
+  <div class="expired-overlay" id="expired-overlay">
+    <div class="modal" style="text-align:center;">
+      <div style="font-size:40px;margin-bottom:16px;">⏰</div>
+      <div class="modal-title">Soft Lock Expired</div>
+      <p class="modal-sub">Your 3-minute hold on this spot has expired. Please go back and select a spot again.</p>
+      <a href="map.html" class="btn btn-primary btn-full">Return to Map</a>
+    </div>
+  </div>
+
+  <!-- ─── Navigation ────────────────────────────────────────────────── -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">P</div>
+        ParkSmart
+      </a>
+      <div class="nav-links">
+        <button class="theme-toggle" id="theme-toggle-btn">☀️</button>
+        <a href="map.html" class="btn btn-ghost btn-sm">← Change Spot</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── Page header ───────────────────────────────────────────────── -->
+  <div class="confirm-layout">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Step 3 of 4</div>
+      <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.5px;">Confirm your reservation</h1>
+      <p style="font-size:14px;color:var(--text-3);margin-top:6px;">Complete your vehicle details and confirm before the timer runs out.</p>
+    </div>
+
+    <div class="confirm-card">
+
+      <!-- Spot Info -->
+      <div class="confirm-top">
+        <div class="spot-badge-large" id="c-spot-badge">P--</div>
+        <div class="confirm-spot-info">
+          <div class="confirm-spot-title" id="c-spot-title">Spot —</div>
+          <div class="confirm-spot-sub" id="c-spot-sub">Floor — · Row — · Col —</div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;" id="c-features"></div>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-section">
+        <div class="timer-label-top">Soft lock expires in</div>
+        <div class="timer-big" id="timer-display">3:00</div>
+        <div class="timer-sub">Complete your booking before this spot is released</div>
+        <div class="timer-bar-track">
+          <div class="timer-bar-fill" id="timer-bar"></div>
+        </div>
+      </div>
+
+      <!-- Vehicle Form -->
+      <div class="form-section">
+        <div class="form-section-title">
+          🚗 Vehicle Information
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Owner Name *</label>
+            <input class="form-input" id="f-owner" type="text" placeholder="e.g. Juan dela Cruz" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">License Plate *</label>
+            <input class="form-input" id="f-plate" type="text" placeholder="e.g. ABC 1234" required style="text-transform:uppercase;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vehicle Type *</label>
+            <select class="form-select" id="f-type">
+              <option value="">Select type</option>
+              <option value="car">🚗 Car / Sedan</option>
+              <option value="suv">🚙 SUV / Van</option>
+              <option value="motorcycle">🏍️ Motorcycle</option>
+              <option value="truck">🚛 Truck / Pickup</option>
+              <option value="disabled">♿ Disabled Vehicle</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="confirm-footer">
+        <button class="btn btn-danger" id="cancel-btn" style="min-width:110px;">
+          Cancel
+        </button>
+        <button class="btn btn-primary btn-full" id="confirm-btn">
+          ✓ Confirm Reservation
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Info box -->
+    <div style="margin-top:16px;padding:16px;background:var(--bg-card);border:1px solid var(--border-faint);border-radius:var(--r-md);font-size:13px;color:var(--text-3);line-height:1.6;">
+      <strong style="color:var(--text-2);">How the soft lock works:</strong> Your spot is temporarily held via an OCC-protected 3-minute timer. If you don't confirm within this window, the lock is automatically released and the spot becomes available to others.
+    </div>
+  </div>
+
+  <script type="module">
+    import { ParkingAPI, toast, initTheme } from './js/api.js';
+    import { initConfirm } from './js/confirm.js';
+    initTheme();
+    initConfirm(ParkingAPI, toast);
+  </script>
+</body>
+</html>

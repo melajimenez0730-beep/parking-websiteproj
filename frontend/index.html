@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkSmart — Distributed Parking Management</title>
+  <meta name="description" content="A distributed parking management system with real-time availability, intelligent spot selection, and zone-sharded MongoDB.">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-top: 48px;
+    }
+    .arch-cell {
+      background: var(--bg-card);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .arch-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-4);
+    }
+    .arch-name { font-size: 15px; font-weight: 600; color: var(--text-1); }
+    .arch-desc { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+    .arch-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--text-4);
+      background: var(--bg-card);
+      padding: 24px;
+    }
+
+    .shard-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .shard-node {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-md);
+      padding: 16px;
+      text-align: center;
+    }
+    .shard-node-num { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+    .shard-node-label { font-size: 11px; color: var(--text-4); margin-top: 4px; }
+    .shard-node-floor { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+    @media (max-width: 768px) {
+      .arch-grid { grid-template-columns: 1fr; }
+      .arch-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Navigation ───────────────────────────────────────────────── -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">P</div>
+        ParkSmart
+      </a>
+      <div class="nav-links">
+        <a href="my-reservation.html" class="btn btn-ghost btn-sm" id="my-res-nav" style="display:none;">My Reservation</a>
+        <button class="theme-toggle" id="theme-toggle-btn">☀️</button>
+        <a href="map.html" class="btn btn-primary">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C5.2 0 3 2.2 3 5c0 3.5 5 11 5 11s5-7.5 5-11c0-2.8-2.2-5-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+          Find a Spot
+        </a>
+        <a href="staff.html" class="btn btn-ghost">Staff Login</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge">
+        <span class="status-dot"></span>
+        Live · Distributed Architecture · MongoDB Sharding
+      </div>
+
+      <h1 class="hero-title">
+        Smart Parking,<br>
+        <span class="gradient-text">Simplified.</span>
+      </h1>
+
+      <p class="hero-sub">
+        A zone-sharded distributed parking management system. Each floor level maps
+        to a dedicated MongoDB shard — instant single-shard reads, transparent
+        cross-shard aggregation for staff insights.
+      </p>
+
+      <div class="hero-ctas">
+        <a href="map.html" class="btn btn-primary btn-lg">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C5.2 0 3 2.2 3 5c0 3.5 5 11 5 11s5-7.5 5-11c0-2.8-2.2-5-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>
+          Find Available Spot
+        </a>
+        <a href="staff.html" class="btn btn-ghost btn-lg">
+          Staff Dashboard →
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="hero-stat-num">3</span>
+          <span class="hero-stat-label">Floor Shards</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-num">36</span>
+          <span class="hero-stat-label">Total Spots</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-num">OCC</span>
+          <span class="hero-stat-label">Concurrency</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-num">3 min</span>
+          <span class="hero-stat-label">Soft Lock</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Features ─────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">Core Features</span>
+        <h2 class="section-title">Everything you need to manage parking</h2>
+        <p class="section-sub" style="margin: 0 auto;">From real-time spot visibility to distributed data across 3 shards, ParkSmart handles it all.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <div class="feature-title">Interactive Parking Map</div>
+          <p class="feature-desc">Visual 3×4 grid layout per floor with live status updates. Hover spots to see vehicle info and availability.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-title">Smart Spot Selection</div>
+          <p class="feature-desc">Algorithm-driven recommendations: Nearest to Entrance, Exit, Grocery, or Disability-accessible spots.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Optimistic Concurrency</div>
+          <p class="feature-desc">Version-based OCC prevents double-booking. Conflicting writes are detected and rejected at the database level.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">3-Minute Soft Lock</div>
+          <p class="feature-desc">Spots are held for 3 minutes during checkout. Expired locks auto-release so other users can book immediately.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🗄️</div>
+          <div class="feature-title">Floor-Level Sharding</div>
+          <p class="feature-desc">MongoDB zone sharding partitions data by <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">floor_number</code>. Each shard holds exactly one floor's data.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Staff Dashboard</div>
+          <p class="feature-desc">Role-authenticated dashboard with cross-shard transaction log, floor-level stats, and real-time occupancy overview.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Architecture ─────────────────────────────────────────────── -->
+  <section class="section" style="background: var(--bg-surface); border-top: 1px solid var(--border-faint); border-bottom: 1px solid var(--border-faint);">
+    <div class="container">
+      <span class="section-label">System Architecture</span>
+      <h2 class="section-title">How the distributed cluster works</h2>
+      <p class="section-sub">A mongos query router sits in front of three zone-sharded replica sets, routing every query to exactly the right floor-level shard.</p>
+
+      <div class="arch-grid">
+        <div class="arch-cell">
+          <div class="arch-label">Query Router</div>
+          <div class="arch-name">Mongos</div>
+          <div class="arch-desc">Receives all queries from the API. Uses the shard key (<code style="font-family:var(--font-mono);color:var(--accent);font-size:12px">floor_number</code>) to route single-floor reads to one shard and fan-out cross-floor aggregations.</div>
+        </div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-cell">
+          <div class="arch-label">Config Servers</div>
+          <div class="arch-name">3-Node Replica Set</div>
+          <div class="arch-desc">Store cluster metadata, zone ranges, and shard mappings. The mongos reads these to build its routing table on startup.</div>
+        </div>
+      </div>
+
+      <div class="shard-row">
+        <div class="shard-node">
+          <div class="shard-node-num">1</div>
+          <div class="shard-node-label">Shard · zone_floor1</div>
+          <div class="shard-node-floor">Floor Level 1 data</div>
+        </div>
+        <div class="shard-node">
+          <div class="shard-node-num">2</div>
+          <div class="shard-node-label">Shard · zone_floor2</div>
+          <div class="shard-node-floor">Floor Level 2 data</div>
+        </div>
+        <div class="shard-node">
+          <div class="shard-node-num">3</div>
+          <div class="shard-node-label">Shard · zone_floor3</div>
+          <div class="shard-node-floor">Floor Level 3 data</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── How It Works ─────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div style="margin-bottom:48px;">
+        <span class="section-label">User Flow</span>
+        <h2 class="section-title">Reserve a spot in 4 steps</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-title">Choose a Floor</div>
+          <p class="step-desc">Select Level 1, 2, or 3. The system fetches live availability from the corresponding shard.</p>
+        </div>
+        <div class="step">
+          <div class="step-title">Select a Spot</div>
+          <p class="step-desc">Browse the interactive grid or use smart-sort to find the closest spot to your destination.</p>
+        </div>
+        <div class="step">
+          <div class="step-title">Soft Lock (3 min)</div>
+          <p class="step-desc">Your spot is held with an OCC-protected soft lock while you complete your vehicle details.</p>
+        </div>
+        <div class="step">
+          <div class="step-title">Confirm & Park</div>
+          <p class="step-desc">Submit your booking. The system atomically converts the soft lock to a confirmed reservation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA Banner ────────────────────────────────────────────────── -->
+  <section class="section" style="padding: 60px 0;">
+    <div class="container" style="text-align:center;">
+      <div class="card" style="max-width:640px; margin:0 auto; background: linear-gradient(135deg, rgba(232,123,61,0.06) 0%, transparent 60%); border-color: var(--accent-border);">
+        <h2 style="font-size:28px; font-weight:700; margin-bottom:12px; letter-spacing:-0.5px;">Ready to park smarter?</h2>
+        <p style="color:var(--text-3); margin-bottom:28px; font-size:15px;">View real-time availability across all 3 floor levels and reserve your spot in under a minute.</p>
+        <a href="map.html" class="btn btn-primary btn-lg" style="margin:0 auto;">
+          Open Parking Map →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="logo" style="opacity:0.6;">
+          <div class="logo-icon" style="width:26px;height:26px;font-size:12px;">P</div>
+          ParkSmart
+        </div>
+        <span class="footer-copy">Distributed Parking Management System · MongoDB Sharding Demo</span>
+        <div class="footer-links">
+          <a href="map.html">Map</a>
+          <a href="my-reservation.html">My Reservation</a>
+          <a href="staff.html">Staff</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { initTheme } from './js/api.js';
+    initTheme();
+    if (sessionStorage.getItem('reservation') || localStorage.getItem('ps_last_reservation')) {
+      document.getElementById('my-res-nav').style.display = 'inline-flex';
+    }
+  </script>
+</body>
+</html>

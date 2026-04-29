@@ -1,0 +1,199 @@
+# ═══════════════════════════════════════════════════════════════
+#  Distributed Parking Management System – Docker Compose
+#  Sharding strategy: floor_number as shard key
+#    Shard 1  →  Floor Level 1
+#    Shard 2  →  Floor Level 2
+#    Shard 3  →  Floor Level 3
+# ═══════════════════════════════════════════════════════════════
+
+services:
+
+  # ─── Config Server Replica Set (cluster metadata) ──────────────
+  configsvr1:
+    image: mongo:7.0
+    container_name: configsvr1
+    hostname: configsvr1
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    volumes:
+      - configsvr1_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  configsvr2:
+    image: mongo:7.0
+    container_name: configsvr2
+    hostname: configsvr2
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    volumes:
+      - configsvr2_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  configsvr3:
+    image: mongo:7.0
+    container_name: configsvr3
+    hostname: configsvr3
+    command: mongod --configsvr --replSet configReplSet --port 27019 --bind_ip_all
+    volumes:
+      - configsvr3_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Shard 1 – Stores all Floor Level 1 data ───────────────────
+  shard1:
+    image: mongo:7.0
+    container_name: shard1
+    hostname: shard1
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --bind_ip_all
+    volumes:
+      - shard1_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Shard 2 – Stores all Floor Level 2 data ───────────────────
+  shard2:
+    image: mongo:7.0
+    container_name: shard2
+    hostname: shard2
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --bind_ip_all
+    volumes:
+      - shard2_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Shard 3 – Stores all Floor Level 3 data ───────────────────
+  shard3:
+    image: mongo:7.0
+    container_name: shard3
+    hostname: shard3
+    command: mongod --shardsvr --replSet shard3ReplSet --port 27018 --bind_ip_all
+    volumes:
+      - shard3_data:/data/db
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Mongos Query Router ────────────────────────────────────────
+  # Routes queries to the correct shard based on floor_number
+  mongos:
+    image: mongo:7.0
+    container_name: mongos
+    hostname: mongos
+    command: >
+      mongos
+      --configdb configReplSet/configsvr1:27019,configsvr2:27019,configsvr3:27019
+      --port 27017
+      --bind_ip_all
+    ports:
+      - "27017:27017"
+    depends_on:
+      - configsvr1
+      - configsvr2
+      - configsvr3
+      - shard1
+      - shard2
+      - shard3
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Mongo Cluster Initializer ──────────────────────────────────
+  # Bootstraps replica sets and configures zone sharding
+  mongo-init:
+    image: mongo:7.0
+    container_name: mongo-init
+    depends_on:
+      - mongos
+    volumes:
+      - ./mongo-init:/mongo-init
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for MongoDB cluster to be ready...' &&
+        sleep 25 &&
+
+        echo '--- Initialising config server replica set ---' &&
+        mongosh --host configsvr1:27019 --eval '
+          rs.initiate({
+            _id: \"configReplSet\",
+            configsvr: true,
+            members: [
+              { _id: 0, host: \"configsvr1:27019\" },
+              { _id: 1, host: \"configsvr2:27019\" },
+              { _id: 2, host: \"configsvr3:27019\" }
+            ]
+          })
+        ' &&
+        sleep 8 &&
+
+        echo '--- Initialising shard replica sets ---' &&
+        mongosh --host shard1:27018 --eval '
+          rs.initiate({ _id: \"shard1ReplSet\", members: [{ _id: 0, host: \"shard1:27018\" }] })
+        ' &&
+        mongosh --host shard2:27018 --eval '
+          rs.initiate({ _id: \"shard2ReplSet\", members: [{ _id: 0, host: \"shard2:27018\" }] })
+        ' &&
+        mongosh --host shard3:27018 --eval '
+          rs.initiate({ _id: \"shard3ReplSet\", members: [{ _id: 0, host: \"shard3:27018\" }] })
+        ' &&
+        sleep 12 &&
+
+        echo '--- Configuring sharding zones and seeding data ---' &&
+        mongosh --host mongos:27017 /mongo-init/init-shards.js &&
+        echo 'Cluster initialisation complete!'
+      "
+    networks:
+      - parking_net
+
+  # ─── Backend REST API (Node.js / Express) ───────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: parking-backend
+    environment:
+      MONGO_URI: mongodb://mongos:27017/parkingDB
+      JWT_SECRET: ${JWT_SECRET:-changeme_in_production_32chars}
+      PORT: 3000
+      NODE_ENV: production
+      STAFF_USERNAME: ${STAFF_USERNAME:-admin}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:-admin123}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongos
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+  # ─── Frontend (Nginx serving static HTML/CSS/JS) ────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: parking-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - parking_net
+    restart: unless-stopped
+
+# ─── Persistent Volumes ──────────────────────────────────────────
+volumes:
+  configsvr1_data:
+  configsvr2_data:
+  configsvr3_data:
+  shard1_data:
+  shard2_data:
+  shard3_data:
+
+# ─── Isolated Bridge Network ────────────────────────────────────
+networks:
+  parking_net:
+    driver: bridge
