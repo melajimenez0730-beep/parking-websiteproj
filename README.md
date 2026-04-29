@@ -9,13 +9,13 @@ pag connected na kayo sa DB eto steps
 
 CMD 1 — Backend:
 
-cd "C:\Users\marks\OneDrive\Desktop\SQL PROJ\backend"
-npm start
-Wait for [DB] Connected before opening the browser.
+open nyo CMD sa folder na name backend
+"npm start"
+
+**Wait for [DB] Connected before opening the browser.**
 
 CMD 2 — Frontend:
-
-cd "C:\Users\marks\OneDrive\Desktop\SQL PROJ\frontend"
+same din dito open cmd sa folder na name frontend
 python -m http.server 8080
 ------------------------------
 
