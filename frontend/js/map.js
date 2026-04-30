@@ -1,14 +1,15 @@
-const ISLANDS_META = [
-  { label: 'A', start: 1   },
-  { label: 'B', start: 37  },
-  { label: 'C', start: 73  },
-  { label: 'D', start: 109 },
-  { label: 'E', start: 145 },
-  { label: 'F', start: 181 },
-];
+function range(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
-const SPOTS_PER_ROW    = 18;
-const SPOTS_PER_ISLAND = 36;
+const ISLANDS_META = [
+  { label: 'A', colLeft: range(1,   18),  colRight: range(19,  36)  },
+  { label: 'B', colLeft: range(37,  54),  colRight: range(55,  72)  },
+  { label: 'C', colLeft: range(73,  90),  colRight: range(91,  108) },
+  { label: 'D', colLeft: range(109, 126), colRight: range(127, 144) },
+  { label: 'E', colLeft: range(145, 162), colRight: range(163, 180) },
+  { label: 'F', colLeft: range(181, 198), colRight: range(199, 216) },
+];
 
 const STATUS_LABEL = {
   available: 'Available', soft_locked: 'Held', reserved: 'Reserved', occupied: 'Occupied'
@@ -140,17 +141,13 @@ export function initMap(ParkingAPI, toast) {
 
     let html = '';
     ISLANDS_META.forEach((island, idx) => {
-      const row1 = Array.from({ length: SPOTS_PER_ROW }, (_, i) => island.start + i);
-      const row2 = Array.from({ length: SPOTS_PER_ROW }, (_, i) => island.start + SPOTS_PER_ROW + i);
-      html += renderIsland(island.label, row1, row2, map);
+      html += renderIsland(island.label, island.colLeft, island.colRight, map);
       if (idx < ISLANDS_META.length - 1) {
         html += `
-          <div class="drive-aisle">
-            <div class="drive-arrow">↑</div>
-            <div class="drive-track"></div>
-            <div class="drive-label">DRIVE</div>
-            <div class="drive-track"></div>
-            <div class="drive-arrow">↓</div>
+          <div class="main-aisle">
+            <div class="aisle-track"></div>
+            <div class="aisle-label">DRIVE</div>
+            <div class="aisle-track"></div>
           </div>
         `;
       }
@@ -162,13 +159,24 @@ export function initMap(ParkingAPI, toast) {
     });
   }
 
-  function renderIsland(label, row1Nums, row2Nums, map) {
+  function renderIsland(label, colLeft, colRight, map) {
+    const ltTop = colLeft.slice(0, 9);
+    const ltBot = colLeft.slice(9);
+    const rtTop = colRight.slice(0, 9);
+    const rtBot = colRight.slice(9);
+
     return `
       <div class="island">
-        <div class="island-label">Island ${label}</div>
-        <div class="island-row">${row1Nums.map(n => renderCell(n, map)).join('')}</div>
-        <div class="island-divider"></div>
-        <div class="island-row">${row2Nums.map(n => renderCell(n, map)).join('')}</div>
+        <div class="island-label">ISL ${label}</div>
+        <div class="island-block">
+          <div class="spot-col">${ltTop.map(n => renderCell(n, map)).join('')}</div>
+          <div class="spot-col">${rtTop.map(n => renderCell(n, map)).join('')}</div>
+        </div>
+        <div class="island-internal-drive">DRIVE</div>
+        <div class="island-block">
+          <div class="spot-col">${ltBot.map(n => renderCell(n, map)).join('')}</div>
+          <div class="spot-col">${rtBot.map(n => renderCell(n, map)).join('')}</div>
+        </div>
       </div>
     `;
   }
@@ -182,11 +190,10 @@ export function initMap(ParkingAPI, toast) {
       <div class="spot-cell${isPWD ? ' pwd' : ''}"
            data-id="${spot.spotId}"
            data-status="${spot.status}"
-           title="Floor ${currentFloor} · P${pad} · ${STATUS_LABEL[spot.status]}">
+           title="P${pad} · ${STATUS_LABEL[spot.status]}">
         ${isPWD ? '<span class="spot-hc">♿</span>' : ''}
         <div class="spot-dot"></div>
         <span class="spot-id">P${pad}</span>
-        <span class="spot-lbl">${STATUS_LABEL[spot.status]}</span>
       </div>
     `;
   }

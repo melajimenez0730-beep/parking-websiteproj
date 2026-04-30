@@ -213,69 +213,66 @@
 
     .facility-grid {
       display: flex;
-      gap: 16px;
-      min-height: 100%;
+      gap: 0;
+      align-items: flex-start;
       width: max-content;
+      padding-bottom: 12px;
     }
 
-    /* Dashed vertical separator between floor groups */
-    .floor-sep {
-      width: 1px;
-      align-self: stretch;
-      background: repeating-linear-gradient(
-        to bottom,
-        var(--border-subtle) 0,
-        var(--border-subtle) 8px,
-        transparent 8px,
-        transparent 18px
-      );
+    /* ── Island — tall + narrow, 2 vertical columns ── */
+    .island {
+      display: flex;
+      flex-direction: column;
       flex-shrink: 0;
-      margin: 0 2px;
     }
-
-    /* ── Island ── */
-    .island { display: flex; flex-direction: column; gap: 5px; }
 
     .island-label {
       text-align: center;
-      font-size: 9px;
+      font-size: 7px;
       font-weight: 800;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--text-4);
-      padding: 4px 0 6px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 0 5px;
     }
 
-    .island-row {
+    .island-block {
       display: flex;
-      gap: 4px;
+      gap: 3px;
+    }
+
+    .spot-col {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .island-internal-drive {
+      height: 20px;
+      display: flex;
+      align-items: center;
       justify-content: center;
+      font-size: 5.5px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-4);
+      border-top: 1px dashed var(--border-subtle);
+      border-bottom: 1px dashed var(--border-subtle);
+      margin: 3px 0;
     }
 
-    .island-divider {
-      height: 2px;
-      margin: 1px 6px;
-      background: repeating-linear-gradient(
-        to right,
-        var(--border-subtle) 0,
-        var(--border-subtle) 6px,
-        transparent 6px,
-        transparent 12px
-      );
-      border-radius: 1px;
-    }
-
-    /* Drive aisle between the two islands */
-    .drive-aisle {
+    /* Main aisle between islands */
+    .main-aisle {
+      width: 44px;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 28px;
+      padding-top: 22px;
       gap: 0;
     }
-    .drive-arrow { font-size: 10px; color: var(--text-4); line-height: 1; padding: 2px 0; }
-    .drive-track {
+    .aisle-track {
       flex: 1;
       width: 1px;
       background: repeating-linear-gradient(
@@ -287,43 +284,42 @@
       );
       margin: 2px 0;
     }
-    .drive-label {
-      font-size: 7px;
+    .aisle-label {
+      font-size: 6px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: 1.5px;
       color: var(--text-4);
       writing-mode: vertical-rl;
-      padding: 5px 1px;
+      padding: 5px 0;
     }
 
     /* ════════════════════════════════════════
-       SPOT CELL
+       SPOT CELL — compact square
     ════════════════════════════════════════ */
     .spot-cell {
-      width: 40px;
+      width: 30px;
+      height: 30px;
       flex-shrink: 0;
       border: 1px solid var(--border-default);
-      border-radius: 5px;
+      border-radius: 4px;
       background: var(--bg-elevated, #1a1a22);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 5px 2px 4px;
-      gap: 3px;
+      gap: 2px;
       cursor: pointer;
       transition: all 0.15s ease;
       user-select: none;
       position: relative;
-      min-height: 54px;
     }
 
-    .spot-empty { visibility: hidden; pointer-events: none; }
+    .spot-empty { visibility: hidden; pointer-events: none; width: 30px; height: 30px; flex-shrink: 0; }
 
     .spot-dot {
-      width: 14px;
-      height: 14px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
       transition: box-shadow 0.15s;
@@ -331,76 +327,47 @@
 
     .spot-id {
       font-family: var(--font-mono);
-      font-size: 8px;
+      font-size: 6.5px;
       font-weight: 700;
-      letter-spacing: 0.2px;
       line-height: 1;
-    }
-
-    .spot-lbl {
-      font-size: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      line-height: 1;
-      opacity: 0.7;
-      overflow: hidden;
-      max-width: 38px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     .spot-hc {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      font-size: 7px;
-      opacity: 0.85;
+      top: 1px;
+      right: 1px;
+      font-size: 6px;
+      line-height: 1;
+      opacity: 0.9;
     }
 
     /* Available */
-    .spot-cell[data-status="available"] {
-      border-color: var(--green-border);
-      border-style: dashed;
-    }
-    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.55); }
+    .spot-cell[data-status="available"] { border-color: var(--green-border); border-style: dashed; }
+    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,0.55); }
     .spot-cell[data-status="available"] .spot-id  { color: var(--green); }
-    .spot-cell[data-status="available"] .spot-lbl { color: var(--green); }
     .spot-cell[data-status="available"]:hover {
-      border-style: solid;
-      border-color: var(--green);
-      background: var(--green-bg);
-      transform: scale(1.1);
-      z-index: 5;
-      box-shadow: 0 3px 10px rgba(34,197,94,0.2);
+      border-style: solid; border-color: var(--green);
+      background: var(--green-bg); transform: scale(1.15); z-index: 5;
+      box-shadow: 0 2px 8px rgba(34,197,94,0.25);
     }
 
     /* Reserved / soft_locked */
     .spot-cell[data-status="reserved"],
-    .spot-cell[data-status="soft_locked"] {
-      border-color: var(--amber-border);
-      cursor: default;
-    }
+    .spot-cell[data-status="soft_locked"] { border-color: var(--amber-border); cursor: default; }
     .spot-cell[data-status="reserved"] .spot-dot,
-    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,0.45); }
+    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 5px rgba(245,158,11,0.45); }
     .spot-cell[data-status="reserved"] .spot-id,
     .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); }
-    .spot-cell[data-status="reserved"] .spot-lbl,
-    .spot-cell[data-status="soft_locked"] .spot-lbl { color: var(--amber); }
 
     /* Occupied */
-    .spot-cell[data-status="occupied"] {
-      border-color: var(--red-border);
-      cursor: default;
-    }
-    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,0.45); }
+    .spot-cell[data-status="occupied"] { border-color: var(--red-border); cursor: default; }
+    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 5px rgba(239,68,68,0.45); }
     .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
-    .spot-cell[data-status="occupied"] .spot-lbl { color: var(--red); }
 
     /* PWD — blue always, regardless of status */
-    .spot-cell.pwd                   { border-color: var(--blue-border) !important; border-style: solid !important; }
-    .spot-cell.pwd .spot-dot         { background: var(--blue) !important; box-shadow: 0 0 8px rgba(59,130,246,0.6) !important; }
-    .spot-cell.pwd .spot-id          { color: var(--blue) !important; }
-    .spot-cell.pwd .spot-lbl         { color: var(--blue) !important; }
+    .spot-cell.pwd                              { border-color: var(--blue-border) !important; border-style: solid !important; }
+    .spot-cell.pwd .spot-dot                    { background: var(--blue) !important; box-shadow: 0 0 6px rgba(59,130,246,0.6) !important; }
+    .spot-cell.pwd .spot-id                     { color: var(--blue) !important; }
     .spot-cell.pwd[data-status="available"]:hover { background: var(--blue-bg) !important; border-color: var(--blue) !important; }
 
     /* Facility loader */
