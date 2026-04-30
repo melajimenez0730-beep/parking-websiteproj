@@ -3,432 +3,433 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ParkSmart — Select a Spot</title>
+  <title>ParkSmart — Facility Monitor</title>
   <link rel="stylesheet" href="css/main.css">
   <style>
-    body { overflow-x: hidden; }
+    html, body { height: 100%; overflow: hidden; }
 
-    .page-wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px 20px 60px;
+    /* ── Two-pane dashboard ── */
+    .dash-layout {
+      display: flex;
+      height: 100vh;
     }
 
-    /* ── Top bar ── */
-    .top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .top-bar-left h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-    .top-bar-left p  { font-size: 13px; color: var(--text-3); margin-top: 2px; }
-
-    /* ── Level tabs ── */
-    .level-tabs {
-      display: flex;
-      gap: 2px;
+    /* ════════════════════════════════════════
+       LEFT SIDEBAR
+    ════════════════════════════════════════ */
+    .dash-sidebar {
+      width: 210px;
+      flex-shrink: 0;
       background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-md);
-      padding: 4px;
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
-    .level-tab {
-      padding: 9px 24px;
-      border-radius: var(--r-sm);
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-3);
-      cursor: pointer;
-      transition: all var(--t-base);
-      background: none;
-      border: 1px solid transparent;
-      font-family: var(--font);
+    .sidebar-logo {
+      padding: 18px 14px 14px;
+      border-bottom: 1px solid var(--border-faint);
+      flex-shrink: 0;
     }
-    .level-tab:hover  { color: var(--text-2); background: var(--bg-card); }
-    .level-tab.active { background: var(--bg-card); color: var(--text-1); border-color: var(--border-default); box-shadow: var(--shadow-sm); }
-
-    /* ── Smart filter bar ── */
-    .filter-bar {
+    .sidebar-logo a {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      text-decoration: none;
+      color: var(--text-1);
+      font-weight: 700;
+      font-size: 14px;
     }
 
-    .filter-label { font-size: 12px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+    .sidebar-sec {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-faint);
+      flex-shrink: 0;
+    }
+    .sidebar-sec-title {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--text-4);
+      margin-bottom: 10px;
+    }
 
-    .filter-chip {
+    /* Stats */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      font-size: 12px;
+    }
+    .stat-row span:first-child { color: var(--text-3); }
+    .stat-val { font-family: var(--font-mono); font-weight: 700; font-size: 14px; }
+    .stat-val.green { color: var(--green); }
+    .stat-val.amber { color: var(--amber); }
+    .stat-val.red   { color: var(--red); }
+
+    /* Floor mini cards */
+    .floor-mini {
+      background: var(--bg-card);
+      border: 1px solid var(--border-faint);
+      border-radius: var(--r-sm);
+      padding: 8px 9px;
+      margin-bottom: 5px;
+      cursor: pointer;
+      transition: border-color var(--t-base);
+    }
+    .floor-mini:last-child { margin-bottom: 0; }
+    .floor-mini.active { border-color: var(--accent-border); background: var(--accent-dim); }
+    .floor-mini-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .floor-mini-name { font-size: 11px; font-weight: 600; color: var(--text-2); }
+    .floor-mini-avail { font-size: 10px; font-family: var(--font-mono); color: var(--green); }
+    .floor-mini-bar { height: 3px; background: var(--border-subtle); border-radius: 2px; overflow: hidden; }
+    .floor-mini-fill { height: 100%; border-radius: 2px; transition: width 0.5s, background 0.5s; }
+
+    /* Sort chips */
+    .sort-chip {
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
-      border-radius: var(--r-full);
-      font-size: 13px;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: var(--r-sm);
+      font-size: 12px;
       font-weight: 500;
       color: var(--text-3);
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      background: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all var(--t-base);
+      margin-bottom: 2px;
+      text-align: left;
+    }
+    .sort-chip:hover  { background: var(--bg-card); color: var(--text-2); }
+    .sort-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+
+    /* Recommendations */
+    .rec-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+    .rec-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 9px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--r-full);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: var(--font-mono);
       cursor: pointer;
       transition: all var(--t-base);
-      font-family: var(--font);
     }
-    .filter-chip:hover { border-color: var(--border-default); color: var(--text-2); }
-    .filter-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .rec-chip:hover { background: rgba(232,123,61,0.25); }
+    .rec-chip .rank { font-size: 9px; opacity: 0.6; }
 
-    /* ── Parking Lot Shell ── */
-    .lot-shell {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-xl);
-      padding: 32px 28px;
-      position: relative;
+    /* Legend */
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--text-3);
+      padding: 2px 0;
+    }
+    .legend-dot-sm {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
-    .lot-header {
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 10px 14px;
+      margin-top: auto;
+      border-top: 1px solid var(--border-faint);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ════════════════════════════════════════
+       MAIN VIEWPORT
+    ════════════════════════════════════════ */
+    .dash-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .dash-topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 28px;
-      flex-wrap: wrap;
+      padding: 12px 20px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
       gap: 12px;
     }
+    .dash-topbar h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: var(--text-1); }
+    .dash-topbar-sub { font-size: 11px; color: var(--text-4); font-family: var(--font-mono); margin-top: 1px; }
+    .dash-topbar-right { display: flex; align-items: center; gap: 8px; }
 
-    .lot-title { font-size: 16px; font-weight: 700; color: var(--text-1); }
-    .lot-shard { font-size: 12px; color: var(--text-4); font-family: var(--font-mono); margin-top: 2px; }
-
-    .lot-avail {
-      display: flex;
-      align-items: baseline;
-      gap: 5px;
-    }
-    .lot-avail-num  { font-size: 28px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
-    .lot-avail-text { font-size: 13px; color: var(--text-3); }
-
-    /* ── Entrance label ── */
-    .entrance-strip {
-      text-align: center;
-      margin-bottom: 16px;
-      position: relative;
-    }
-    .entrance-strip::before,
-    .entrance-strip::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      width: 38%;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--green));
-    }
-    .entrance-strip::before { left: 0; }
-    .entrance-strip::after  { right: 0; background: linear-gradient(90deg, var(--green), transparent); }
-
-    .entrance-tag {
+    /* Total availability badge */
+    .total-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--green);
+      padding: 4px 12px;
       background: var(--green-bg);
       border: 1px solid var(--green-border);
       border-radius: var(--r-full);
-      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green);
+      font-family: var(--font-mono);
     }
 
-    /* ── The lot grid: 2 banks + central aisle ── */
-    .lot-grid {
-      display: grid;
-      grid-template-columns: 1fr 80px 1fr;
-      gap: 0;
-      min-height: 320px;
+    /* ── Facility grid scroll area ── */
+    .facility-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
     }
 
-    /* ── Parking bank (left / right) ── */
-    .bank {
-      display: grid;
-      grid-template-rows: repeat(3, 1fr);
-      gap: 8px;
+    .facility-grid {
+      display: flex;
+      gap: 16px;
+      min-height: 100%;
+      width: max-content;
     }
 
-    .bank-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+    /* Dashed vertical separator between floor groups */
+    .floor-sep {
+      width: 1px;
+      align-self: stretch;
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--border-subtle) 0,
+        var(--border-subtle) 8px,
+        transparent 8px,
+        transparent 18px
+      );
+      flex-shrink: 0;
+      margin: 0 2px;
     }
 
-    /* ── Individual Spot ── */
-    .pspot {
-      position: relative;
+    /* ── Per-floor group ── */
+    .floor-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .floor-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
       border-radius: var(--r-sm);
-      border: 2px solid var(--border-default);
-      background: var(--bg-elevated, #1a1a1a);
-      cursor: pointer;
-      transition: all 0.18s ease;
+    }
+    .fgh-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-2);
+    }
+    .fgh-shard { font-size: 9px; font-family: var(--font-mono); color: var(--text-4); margin-top: 1px; }
+    .fgh-badge { font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--green); }
+
+    /* Two islands + drive aisle */
+    .floor-islands {
+      display: grid;
+      grid-template-columns: 1fr 26px 1fr;
+      gap: 0;
+      flex: 1;
+    }
+
+    /* ── Island ── */
+    .island { display: flex; flex-direction: column; gap: 5px; }
+
+    .island-label {
+      text-align: center;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-4);
+      padding: 4px 0 6px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .island-row {
+      display: flex;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .island-divider {
+      height: 2px;
+      margin: 1px 6px;
+      background: repeating-linear-gradient(
+        to right,
+        var(--border-subtle) 0,
+        var(--border-subtle) 6px,
+        transparent 6px,
+        transparent 12px
+      );
+      border-radius: 1px;
+    }
+
+    /* Drive aisle between the two islands */
+    .drive-aisle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 28px;
+      gap: 0;
+    }
+    .drive-arrow { font-size: 10px; color: var(--text-4); line-height: 1; padding: 2px 0; }
+    .drive-track {
+      flex: 1;
+      width: 1px;
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--border-medium) 0,
+        var(--border-medium) 6px,
+        transparent 6px,
+        transparent 13px
+      );
+      margin: 2px 0;
+    }
+    .drive-label {
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-4);
+      writing-mode: vertical-rl;
+      padding: 5px 1px;
+    }
+
+    /* ════════════════════════════════════════
+       SPOT CELL
+    ════════════════════════════════════════ */
+    .spot-cell {
+      width: 60px;
+      flex-shrink: 0;
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      background: var(--bg-elevated, #1a1a22);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: 7px 4px 5px;
       gap: 4px;
-      min-height: 90px;
-      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
       user-select: none;
+      position: relative;
+      min-height: 78px;
     }
 
-    /* Dashed lane marking between spots */
-    .bank-left  .pspot { border-right: 2px dashed var(--border-subtle); }
-    .bank-right .pspot { border-left:  2px dashed var(--border-subtle); }
+    .spot-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: box-shadow 0.15s;
+    }
 
-    .pspot-num {
+    .spot-id {
       font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-4);
-      line-height: 1;
-      z-index: 1;
-    }
-
-    .pspot-car {
-      z-index: 1;
-      opacity: 0.85;
-      transition: opacity var(--t-base);
-    }
-
-    .pspot-status-label {
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      line-height: 1;
+    }
+
+    .spot-lbl {
+      font-size: 7.5px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
-      z-index: 1;
       line-height: 1;
-    }
-
-    /* HC badge */
-    .pspot-hc {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      font-size: 13px;
       opacity: 0.7;
-      z-index: 2;
     }
 
-    /* Click hint on available spots */
-    .pspot[data-status="available"]::after {
-      content: 'TAP TO RESERVE';
+    .spot-hc {
       position: absolute;
-      bottom: 0;
-      left: 0; right: 0;
-      background: rgba(34,197,94,0.15);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      color: var(--green);
-      text-align: center;
-      padding: 3px 0;
-      opacity: 0;
-      transition: opacity var(--t-base);
+      top: 3px;
+      right: 3px;
+      font-size: 8px;
+      opacity: 0.75;
     }
-    .pspot[data-status="available"]:hover::after { opacity: 1; }
 
-    /* Status colors */
-    .pspot[data-status="available"] {
-      background: var(--green-bg);
+    /* Available */
+    .spot-cell[data-status="available"] {
       border-color: var(--green-border);
+      border-style: dashed;
     }
-    .pspot[data-status="available"] .pspot-num    { color: var(--green); }
-    .pspot[data-status="available"] .pspot-status-label { color: var(--green); }
-    .pspot[data-status="available"]:hover {
+    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.55); }
+    .spot-cell[data-status="available"] .spot-id  { color: var(--green); }
+    .spot-cell[data-status="available"] .spot-lbl { color: var(--green); }
+    .spot-cell[data-status="available"]:hover {
+      border-style: solid;
       border-color: var(--green);
-      box-shadow: var(--green-glow), 0 4px 16px rgba(0,0,0,0.4);
-      transform: scale(1.04);
+      background: var(--green-bg);
+      transform: scale(1.07);
       z-index: 5;
+      box-shadow: 0 4px 14px rgba(34,197,94,0.2);
     }
 
-    .pspot[data-status="reserved"],
-    .pspot[data-status="soft_locked"] {
-      background: var(--amber-bg);
+    /* Reserved / soft_locked */
+    .spot-cell[data-status="reserved"],
+    .spot-cell[data-status="soft_locked"] {
       border-color: var(--amber-border);
       cursor: default;
     }
-    .pspot[data-status="reserved"] .pspot-num,
-    .pspot[data-status="soft_locked"] .pspot-num { color: var(--amber); }
-    .pspot[data-status="reserved"] .pspot-status-label,
-    .pspot[data-status="soft_locked"] .pspot-status-label { color: var(--amber); }
+    .spot-cell[data-status="reserved"] .spot-dot,
+    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.45); }
+    .spot-cell[data-status="reserved"] .spot-id,
+    .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); }
+    .spot-cell[data-status="reserved"] .spot-lbl,
+    .spot-cell[data-status="soft_locked"] .spot-lbl { color: var(--amber); }
 
-    .pspot[data-status="occupied"] {
-      background: var(--red-bg);
+    /* Occupied */
+    .spot-cell[data-status="occupied"] {
       border-color: var(--red-border);
       cursor: default;
     }
-    .pspot[data-status="occupied"] .pspot-num    { color: var(--red); }
-    .pspot[data-status="occupied"] .pspot-status-label { color: var(--red); }
+    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.45); }
+    .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
+    .spot-cell[data-status="occupied"] .spot-lbl { color: var(--red); }
 
-    /* Highlight on smart select */
-    .pspot.highlighted {
-      box-shadow: 0 0 0 2px var(--accent), var(--accent-glow);
-      border-color: var(--accent) !important;
-    }
-    .pspot.highlighted .pspot-num { color: var(--accent) !important; }
-
-    /* ── Central Aisle ── */
-    .aisle {
+    /* Facility loader */
+    .facility-loading {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-around;
-      padding: 8px 0;
-      position: relative;
-    }
-
-    .aisle::before {
-      content: '';
-      position: absolute;
-      top: 0; bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 2px;
-      background: repeating-linear-gradient(
-        to bottom,
-        var(--border-medium) 0,
-        var(--border-medium) 12px,
-        transparent 12px,
-        transparent 24px
-      );
-    }
-
-    .aisle-arrow {
-      font-size: 18px;
-      color: var(--text-4);
-      z-index: 1;
-      background: var(--bg-card);
-      padding: 4px;
-      border-radius: 50%;
-      line-height: 1;
-    }
-
-    .aisle-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-4);
-      writing-mode: vertical-rl;
-      z-index: 1;
-      background: var(--bg-card);
-      padding: 4px 2px;
-    }
-
-    /* ── Bottom labels (exit / grocery) ── */
-    .bottom-strip {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 16px;
-      padding: 0 4px;
-    }
-
-    .bottom-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 4px 12px;
-      border-radius: var(--r-full);
-    }
-
-    .bottom-tag.exit    { color: var(--red);   background: var(--red-bg);   border: 1px solid var(--red-border); }
-    .bottom-tag.grocery { color: var(--amber);  background: var(--amber-bg); border: 1px solid var(--amber-border); }
-
-    /* ── Legend + Availability bar ── */
-    .bottom-bar {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border-faint);
-    }
-
-    .avail-bar-wrap {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .avail-progress {
-      width: 120px;
-      height: 6px;
-      background: var(--border-subtle);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .avail-progress-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: var(--green);
-      transition: width 0.5s ease;
-    }
-
-    /* ── Recommend list ── */
-    .recommend-bar {
-      margin-bottom: 16px;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, rgba(232,123,61,0.10) 0%, rgba(232,123,61,0.04) 100%);
-      border: 1px solid var(--accent-border);
-      border-radius: var(--r-md);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      box-shadow: 0 0 18px rgba(232,123,61,0.12), inset 0 1px 0 rgba(232,123,61,0.12);
-    }
-
-    .recommend-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent);
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .recommend-spot {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 16px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent-border);
-      border-radius: var(--r-full);
+      justify-content: center;
+      min-height: 300px;
+      gap: 14px;
+      color: var(--text-3);
       font-size: 14px;
-      font-weight: 700;
-      color: var(--accent);
-      font-family: var(--font-mono);
-      cursor: pointer;
-      transition: all var(--t-base);
-      box-shadow: 0 0 10px rgba(232,123,61,0.15);
-    }
-    .recommend-spot:hover {
-      background: rgba(232,123,61,0.25);
-      box-shadow: 0 0 18px rgba(232,123,61,0.35);
-      transform: translateY(-1px);
-    }
-    .recommend-spot .rank {
-      font-size: 11px;
-      opacity: 0.65;
-      font-weight: 500;
+      width: 100%;
     }
 
     /* ── Reserve Modal ── */
@@ -446,10 +447,7 @@
       pointer-events: none;
       transition: opacity 0.2s ease;
     }
-    .reserve-modal-backdrop.open {
-      opacity: 1;
-      pointer-events: all;
-    }
+    .reserve-modal-backdrop.open { opacity: 1; pointer-events: all; }
 
     .reserve-modal {
       background: var(--bg-card);
@@ -462,70 +460,27 @@
       transform: scale(0.95) translateY(12px);
       transition: transform 0.2s ease;
     }
-    .reserve-modal-backdrop.open .reserve-modal {
-      transform: scale(1) translateY(0);
-    }
+    .reserve-modal-backdrop.open .reserve-modal { transform: scale(1) translateY(0); }
 
     .modal-spot-badge {
-      width: 64px;
-      height: 64px;
+      width: 64px; height: 64px;
       background: var(--green-bg);
       border: 1px solid var(--green-border);
       border-radius: var(--r-lg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-family: var(--font-mono);
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 18px; font-weight: 700;
       color: var(--green);
       margin-bottom: 20px;
     }
-
     .modal-title { font-size: 20px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
     .modal-sub   { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
-
-    .modal-info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .modal-info-cell {
-      background: var(--bg-input);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-sm);
-      padding: 12px;
-    }
+    .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .modal-info-cell { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 12px; }
     .modal-info-cell-label { font-size: 11px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
     .modal-info-cell-value { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-mono); }
-
     .modal-features { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
-
-    .modal-actions { display: flex; gap: 10px; }
-
-    /* ── Car SVG icons (top-down view) ── */
-    .car-svg { width: 28px; height: 48px; }
-
-    /* Loader */
-    .lot-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 320px;
-      gap: 14px;
-      color: var(--text-3);
-      font-size: 14px;
-    }
-
-    @media (max-width: 600px) {
-      .lot-grid { grid-template-columns: 1fr 48px 1fr; }
-      .pspot { min-height: 70px; }
-      .car-svg { width: 20px; height: 34px; }
-      .filter-chip span:last-child { display: none; }
-    }
+    .modal-actions  { display: flex; gap: 10px; }
   </style>
 </head>
 <body>
@@ -535,8 +490,7 @@
     <div class="reserve-modal">
       <div class="modal-spot-badge" id="m-badge">P--</div>
       <div class="modal-title" id="m-title">Spot P--</div>
-      <div class="modal-sub"  id="m-sub">Floor — · Row — · Col —</div>
-
+      <div class="modal-sub"   id="m-sub">Floor — · Row — · Col —</div>
       <div class="modal-info-grid">
         <div class="modal-info-cell">
           <div class="modal-info-cell-label">Floor</div>
@@ -555,121 +509,137 @@
           <div class="modal-info-cell-value" style="color:var(--green);" id="m-status">Available</div>
         </div>
       </div>
-
       <div class="modal-features" id="m-features"></div>
-
       <div class="modal-actions">
         <button class="btn btn-ghost" style="min-width:90px;" id="m-cancel-btn">Cancel</button>
-        <button class="btn btn-primary btn-full" id="m-reserve-btn">
-          🔒 Reserve This Spot
-        </button>
+        <button class="btn btn-primary btn-full" id="m-reserve-btn">🔒 Reserve This Spot</button>
       </div>
     </div>
   </div>
 
-  <!-- ── Nav ── -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="index.html" class="logo">
-        <div class="logo-icon">P</div>
-        ParkSmart
-      </a>
-      <div class="nav-links">
-        <span id="avail-badge" class="badge" style="display:none;"></span>
-        <a href="my-reservation.html" class="btn btn-ghost btn-sm" id="my-res-link" style="display:none;">My Reservation</a>
-        <button class="theme-toggle" id="theme-toggle-btn">☀️</button>
-        <a href="index.html" class="btn btn-ghost btn-sm">← Home</a>
+  <!-- ── Dashboard Layout ── -->
+  <div class="dash-layout">
+
+    <!-- ── LEFT SIDEBAR ── -->
+    <aside class="dash-sidebar">
+
+      <div class="sidebar-logo">
+        <a href="index.html">
+          <div class="logo-icon">P</div>
+          ParkSmart
+        </a>
       </div>
-    </div>
-  </nav>
 
-  <div class="page-wrap">
-
-    <!-- Top bar -->
-    <div class="top-bar">
-      <div class="top-bar-left">
-        <h1>Select a Parking Spot</h1>
-        <p id="shard-info">Choose a floor, then tap an available spot to reserve it.</p>
-      </div>
-      <div class="level-tabs">
-        <button class="level-tab active" data-level="1">Level 1</button>
-        <button class="level-tab"        data-level="2">Level 2</button>
-        <button class="level-tab"        data-level="3">Level 3</button>
-      </div>
-    </div>
-
-    <!-- Smart filter bar -->
-    <div class="filter-bar">
-      <span class="filter-label">Smart Sort:</span>
-      <button class="filter-chip active" data-criteria="entrance">🚪 <span>Near Entrance</span></button>
-      <button class="filter-chip"        data-criteria="exit">⬅️ <span>Near Exit</span></button>
-      <button class="filter-chip"        data-criteria="grocery">🛒 <span>Near Grocery</span></button>
-      <button class="filter-chip"        data-criteria="disability">♿ <span>Disability</span></button>
-      <button class="btn btn-ghost btn-sm" id="refresh-btn" style="margin-left:auto;">↻ Refresh</button>
-    </div>
-
-    <!-- Recommendations (below Smart Sort, above the lot) -->
-    <div class="recommend-bar" id="recommend-bar">
-      <span class="recommend-label">Best spots:</span>
-      <span style="font-size:13px;color:var(--text-4);">Loading…</span>
-    </div>
-
-    <!-- Parking Lot -->
-    <div class="lot-shell">
-      <div class="lot-header">
-        <div>
-          <div class="lot-title" id="lot-title">Floor Level 1</div>
-          <div class="lot-shard" id="lot-shard">→ Shard 1 · zone_floor1</div>
+      <!-- Overall stats -->
+      <div class="sidebar-sec">
+        <div class="sidebar-sec-title">Facility Overview</div>
+        <div class="stat-row">
+          <span>Available</span>
+          <span class="stat-val green" id="s-avail">—</span>
         </div>
-        <div class="lot-avail">
-          <span class="lot-avail-num" id="avail-num">—</span>
-          <span class="lot-avail-text">/ 12 available</span>
+        <div class="stat-row">
+          <span>Reserved</span>
+          <span class="stat-val amber" id="s-reserved">—</span>
+        </div>
+        <div class="stat-row">
+          <span>Occupied</span>
+          <span class="stat-val red" id="s-occupied">—</span>
         </div>
       </div>
 
-      <!-- Entrance strip -->
-      <div class="entrance-strip">
-        <span class="entrance-tag">▼ Main Entrance</span>
-      </div>
-
-      <!-- Main grid -->
-      <div id="lot-grid-wrap">
-        <div class="lot-loading">
-          <div class="spinner"></div>
-          Loading spots from shard…
+      <!-- Per-floor breakdown -->
+      <div class="sidebar-sec">
+        <div class="sidebar-sec-title">By Floor · Shard</div>
+        <div id="floor-mini-1" class="floor-mini active" data-floor="1">
+          <div class="floor-mini-row">
+            <span class="floor-mini-name">Floor 1 · Shard 1</span>
+            <span class="floor-mini-avail" id="fma-1">—</span>
+          </div>
+          <div class="floor-mini-bar"><div class="floor-mini-fill" id="fmf-1" style="width:0%"></div></div>
+        </div>
+        <div id="floor-mini-2" class="floor-mini" data-floor="2">
+          <div class="floor-mini-row">
+            <span class="floor-mini-name">Floor 2 · Shard 2</span>
+            <span class="floor-mini-avail" id="fma-2">—</span>
+          </div>
+          <div class="floor-mini-bar"><div class="floor-mini-fill" id="fmf-2" style="width:0%"></div></div>
+        </div>
+        <div id="floor-mini-3" class="floor-mini" data-floor="3">
+          <div class="floor-mini-row">
+            <span class="floor-mini-name">Floor 3 · Shard 3</span>
+            <span class="floor-mini-avail" id="fma-3">—</span>
+          </div>
+          <div class="floor-mini-bar"><div class="floor-mini-fill" id="fmf-3" style="width:0%"></div></div>
         </div>
       </div>
 
-      <!-- Bottom exit/grocery labels -->
-      <div class="bottom-strip" id="bottom-strip" style="display:none;">
-        <span class="bottom-tag exit">▲ Exit</span>
-        <span class="bottom-tag grocery">🛒 Grocery ▲</span>
+      <!-- Smart sort -->
+      <div class="sidebar-sec">
+        <div class="sidebar-sec-title">Smart Sort</div>
+        <button class="sort-chip active" data-criteria="entrance">🚪 Near Entrance</button>
+        <button class="sort-chip"        data-criteria="exit">⬅️ Near Exit</button>
+        <button class="sort-chip"        data-criteria="grocery">🛒 Near Grocery</button>
+        <button class="sort-chip"        data-criteria="disability">♿ Disability</button>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="sidebar-sec">
+        <div class="sidebar-sec-title">Best Spots <span id="rec-floor-label" style="color:var(--accent);font-size:9px;">(Floor 1)</span></div>
+        <div class="rec-wrap" id="recommend-bar">
+          <span style="font-size:11px;color:var(--text-4);">Loading…</span>
+        </div>
       </div>
 
       <!-- Legend -->
-      <div class="bottom-bar">
-        <div class="legend-item"><div class="legend-dot green"></div> Available</div>
-        <div class="legend-item"><div class="legend-dot amber"></div> Reserved / Locked</div>
-        <div class="legend-item"><div class="legend-dot red"></div> Occupied</div>
-        <div class="legend-item">
-          <div style="width:12px;height:12px;border-radius:3px;background:var(--blue-bg);border:1px dashed var(--blue-border);flex-shrink:0;"></div>
-          Disability HC
+      <div class="sidebar-sec">
+        <div class="sidebar-sec-title">Legend</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:var(--green);"></div> Available</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:var(--amber);"></div> Reserved / Held</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:var(--red);"></div> Occupied</div>
+        <div class="legend-row"><span style="font-size:10px;opacity:0.7;">♿</span> Disability HC</div>
+      </div>
+
+      <!-- Sidebar footer -->
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="theme-toggle-btn" style="font-size:16px;">☀️</button>
+        <a href="my-reservation.html" class="btn btn-ghost btn-sm" id="my-res-link" style="display:none;font-size:11px;padding:4px 10px;">My Res.</a>
+        <a href="index.html" class="btn btn-ghost btn-sm" style="font-size:11px;padding:4px 10px;margin-left:auto;">← Home</a>
+      </div>
+
+    </aside>
+
+    <!-- ── MAIN VIEWPORT ── -->
+    <main class="dash-main">
+
+      <!-- Top bar -->
+      <div class="dash-topbar">
+        <div>
+          <h1>Parking Facility Monitor</h1>
+          <div class="dash-topbar-sub" id="shard-info">3 shards · 36 spots · Live view</div>
         </div>
-        <div class="avail-bar-wrap">
-          <div class="avail-progress"><div class="avail-progress-fill" id="avail-fill" style="width:100%"></div></div>
-          <span style="font-size:12px;color:var(--text-3);" id="avail-pct">—% free</span>
+        <div class="dash-topbar-right">
+          <span class="total-badge" id="total-badge">— / 36 available</span>
+          <button class="btn btn-ghost btn-sm" id="refresh-btn">↻ Refresh</button>
         </div>
       </div>
-    </div>
 
+      <!-- Facility grid -->
+      <div class="facility-wrap">
+        <div class="facility-grid" id="facility-grid">
+          <div class="facility-loading">
+            <div class="spinner"></div>
+            Loading facility from all shards…
+          </div>
+        </div>
+      </div>
 
+    </main>
   </div>
 
   <script type="module">
     import { ParkingAPI, toast, initTheme } from './js/api.js';
     import { initMap } from './js/map.js';
     initTheme();
-    // Show "My Reservation" link if user has an active or confirmed reservation
     if (sessionStorage.getItem('reservation') || localStorage.getItem('ps_last_reservation')) {
       document.getElementById('my-res-link').style.display = 'inline-flex';
     }

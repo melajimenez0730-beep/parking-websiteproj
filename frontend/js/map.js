@@ -1,8 +1,3 @@
-const LEFT_BANK  = [[1,2],[5,6],[9,10]];
-const RIGHT_BANK = [[3,4],[7,8],[11,12]];
-
-const SHARD = { 1:'Shard 1 · zone_floor1', 2:'Shard 2 · zone_floor2', 3:'Shard 3 · zone_floor3' };
-
 const PRIORITY = {
   entrance:   [1,2,3,4,5,6,7,8,9,10,11,12],
   exit:       [9,10,5,6,1,2,11,12,7,8,3,4],
@@ -11,85 +6,53 @@ const PRIORITY = {
 };
 
 const STATUS_LABEL = {
-  available:'Available', soft_locked:'Held', reserved:'Reserved', occupied:'Occupied'
+  available: 'Available', soft_locked: 'Held', reserved: 'Reserved', occupied: 'Occupied'
 };
 
-const FEATURE_ICONS = { entrance:'🚪', exit:'⬅️', grocery:'🛒', disability:'♿' };
-
-function carSVG(color, flip = false) {
-  return `<svg class="car-svg" viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg" ${flip ? 'style="transform:scaleX(-1)"' : ''}>
-    <rect x="4" y="8" width="32" height="56" rx="8" fill="${color}" opacity="0.9"/>
-    <rect x="8" y="14" width="24" height="16" rx="4" fill="rgba(0,0,0,0.45)"/>
-    <rect x="8" y="44" width="24" height="13" rx="3" fill="rgba(0,0,0,0.35)"/>
-    <rect x="10" y="30" width="20" height="14" rx="2" fill="${color}" opacity="0.6"/>
-    <rect x="0"  y="12" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <rect x="34" y="12" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <rect x="0"  y="46" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <rect x="34" y="46" width="6" height="14" rx="3" fill="${color}" opacity="0.7"/>
-    <rect x="8"  y="8" width="8" height="5" rx="2" fill="rgba(255,230,100,0.8)"/>
-    <rect x="24" y="8" width="8" height="5" rx="2" fill="rgba(255,230,100,0.8)"/>
-    <rect x="8"  y="63" width="8" height="5" rx="2" fill="rgba(255,80,80,0.9)"/>
-    <rect x="24" y="63" width="8" height="5" rx="2" fill="rgba(255,80,80,0.9)"/>
-  </svg>`;
-}
-
-function spotCarIcon(status, isRightBank) {
-  if (status === 'occupied') return carSVG('#EF4444', isRightBank);
-  if (status === 'reserved' || status === 'soft_locked') return carSVG('#F59E0B', isRightBank);
-  return '';
-}
+const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disability: '♿' };
 
 export function initMap(ParkingAPI, toast) {
-  let currentLevel   = 1;
-  let currentSpots   = [];
+  let allSpots      = { 1: [], 2: [], 3: [] };
+  let selectedSpot  = null;
+  let currentLevel  = 1;
   let currentCriteria = 'entrance';
-  let selectedSpot   = null;
 
-  const gridWrap    = document.getElementById('lot-grid-wrap');
-  const bottomStrip = document.getElementById('bottom-strip');
-  const lotTitle    = document.getElementById('lot-title');
-  const lotShard    = document.getElementById('lot-shard');
-  const availNum    = document.getElementById('avail-num');
-  const availFill   = document.getElementById('avail-fill');
-  const availPct    = document.getElementById('avail-pct');
-  const availBadge  = document.getElementById('avail-badge');
-  const shardInfo   = document.getElementById('shard-info');
-
+  const facilityGrid  = document.getElementById('facility-grid');
   const modalBackdrop = document.getElementById('reserve-modal');
-  const mBadge     = document.getElementById('m-badge');
-  const mTitle     = document.getElementById('m-title');
-  const mSub       = document.getElementById('m-sub');
-  const mFloor     = document.getElementById('m-floor');
-  const mShard     = document.getElementById('m-shard');
-  const mPos       = document.getElementById('m-pos');
-  const mStatus    = document.getElementById('m-status');
-  const mFeatures  = document.getElementById('m-features');
-  const mReserveBtn = document.getElementById('m-reserve-btn');
-  const mCancelBtn  = document.getElementById('m-cancel-btn');
+  const mBadge        = document.getElementById('m-badge');
+  const mTitle        = document.getElementById('m-title');
+  const mSub          = document.getElementById('m-sub');
+  const mFloor        = document.getElementById('m-floor');
+  const mShard        = document.getElementById('m-shard');
+  const mPos          = document.getElementById('m-pos');
+  const mStatus       = document.getElementById('m-status');
+  const mFeatures     = document.getElementById('m-features');
+  const mReserveBtn   = document.getElementById('m-reserve-btn');
+  const mCancelBtn    = document.getElementById('m-cancel-btn');
 
-  document.querySelectorAll('.level-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.level-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentLevel = parseInt(tab.dataset.level);
-      loadFloor(currentLevel);
-    });
-  });
+  mCancelBtn.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
 
-  document.querySelectorAll('.filter-chip').forEach(chip => {
+  document.getElementById('refresh-btn').addEventListener('click', () => loadAll(true));
+
+  document.querySelectorAll('.sort-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       currentCriteria = chip.dataset.criteria;
-      applyHighlights();
       loadRecommendations();
     });
   });
 
-  document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentLevel, true));
-
-  mCancelBtn.addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+  document.querySelectorAll('.floor-mini').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.floor-mini').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      currentLevel = parseInt(card.dataset.floor);
+      document.getElementById('rec-floor-label').textContent = `(Floor ${currentLevel})`;
+      loadRecommendations();
+    });
+  });
 
   mReserveBtn.addEventListener('click', async () => {
     if (!selectedSpot) return;
@@ -101,13 +64,13 @@ export function initMap(ParkingAPI, toast) {
       const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {});
 
       sessionStorage.setItem('reservation', JSON.stringify({
-        spotId:   selectedSpot.spotId,
-        spotNum:  selectedSpot.spotNum,
-        floor:    selectedSpot.floor_number,
-        row:      selectedSpot.row,
-        col:      selectedSpot.col,
-        features: selectedSpot.features,
-        lockId:   result.lockId,
+        spotId:    selectedSpot.spotId,
+        spotNum:   selectedSpot.spotNum,
+        floor:     selectedSpot.floor_number,
+        row:       selectedSpot.row,
+        col:       selectedSpot.col,
+        features:  selectedSpot.features,
+        lockId:    result.lockId,
         expiresAt: result.expiresAt,
         userId,
       }));
@@ -118,108 +81,138 @@ export function initMap(ParkingAPI, toast) {
       mReserveBtn.disabled = false;
       mReserveBtn.innerHTML = '🔒 Reserve This Spot';
       closeModal();
-      loadFloor(currentLevel);
+      loadAll();
     }
   });
 
-  loadFloor(1);
-  setInterval(() => loadFloor(currentLevel), 30000);
+  loadAll();
+  setInterval(loadAll, 30000);
 
-  async function loadFloor(level, showSpinner = false) {
+  async function loadAll(showSpinner = false) {
     if (showSpinner) {
-      gridWrap.innerHTML = '<div class="lot-loading"><div class="spinner"></div> Refreshing…</div>';
-      bottomStrip.style.display = 'none';
+      facilityGrid.innerHTML = '<div class="facility-loading"><div class="spinner"></div> Refreshing…</div>';
     }
 
-    lotTitle.textContent = `Floor Level ${level}`;
-    lotShard.textContent = `→ ${SHARD[level]}`;
-    shardInfo.textContent = `Showing Floor ${level} · ${SHARD[level]}`;
-
     try {
-      currentSpots = await ParkingAPI.getSpots(level);
-      renderLot(currentSpots);
-      updateAvailability(currentSpots);
+      const [f1, f2, f3] = await Promise.all([
+        ParkingAPI.getSpots(1),
+        ParkingAPI.getSpots(2),
+        ParkingAPI.getSpots(3),
+      ]);
+      allSpots = { 1: f1, 2: f2, 3: f3 };
+      renderFacility();
+      updateSidebar();
       await loadRecommendations();
     } catch (err) {
       console.error(err);
-      gridWrap.innerHTML = `<div class="lot-loading" style="color:var(--red);">⚠ Failed to load spots.<br><small style="color:var(--text-4);">Is the backend running on port 3000?</small></div>`;
+      facilityGrid.innerHTML = `<div class="facility-loading" style="color:var(--red);">⚠ Failed to load facility.<br><small style="color:var(--text-4);">Is the backend running on port 3000?</small></div>`;
     }
   }
 
-  function updateAvailability(spots) {
-    const avail = spots.filter(s => s.status === 'available').length;
-    const pct   = Math.round((avail / 12) * 100);
-    availNum.textContent  = avail;
-    availFill.style.width = pct + '%';
-    availFill.style.background = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--red)';
-    availPct.textContent  = pct + '% free';
-    availBadge.textContent = `${avail} free`;
-    availBadge.style.display = 'inline-flex';
-  }
-
-  function renderLot(spots) {
-    const map = {};
-    spots.forEach(s => { map[s.spotNum] = s; });
-
-    function renderBank(rows, isRight) {
-      const bankClass = isRight ? 'bank bank-right' : 'bank bank-left';
-      let html = `<div class="${bankClass}">`;
-      rows.forEach(([a, b]) => {
-        html += `<div class="bank-row">`;
-        [a, b].forEach(num => {
-          const spot = map[num];
-          if (!spot) return;
-          const isHC    = spot.features?.includes('disability');
-          const pad     = String(num).padStart(2, '0');
-          const hasCarIcon = spot.status !== 'available';
-
-          html += `
-            <div class="pspot ${isHC ? 'pspot-hc-spot' : ''}"
-                 data-id="${spot.spotId}"
-                 data-status="${spot.status}"
-                 data-num="${num}"
-                 title="P${pad} · ${STATUS_LABEL[spot.status]}">
-              ${isHC ? '<span class="pspot-hc">♿</span>' : ''}
-              <span class="pspot-num">P${pad}</span>
-              ${hasCarIcon ? `<div class="pspot-car">${spotCarIcon(spot.status, isRight)}</div>` : ''}
-              <span class="pspot-status-label">${STATUS_LABEL[spot.status]}</span>
-            </div>
-          `;
-        });
-        html += `</div>`;
-      });
-      html += `</div>`;
-      return html;
+  function renderFacility() {
+    let html = '';
+    for (let floor = 1; floor <= 3; floor++) {
+      const spots = allSpots[floor];
+      const map   = {};
+      spots.forEach(s => { map[s.spotNum] = s; });
+      const avail = spots.filter(s => s.status === 'available').length;
+      html += renderFloorGroup(floor, map, avail);
+      if (floor < 3) html += '<div class="floor-sep"></div>';
     }
+    facilityGrid.innerHTML = html;
 
-    const aisleHtml = `
-      <div class="aisle">
-        <div class="aisle-arrow">↓</div>
-        <div class="aisle-label">AISLE</div>
-        <div class="aisle-arrow">↑</div>
-      </div>
-    `;
-
-    gridWrap.innerHTML = `
-      <div class="lot-grid">
-        ${renderBank(LEFT_BANK, false)}
-        ${aisleHtml}
-        ${renderBank(RIGHT_BANK, true)}
-      </div>
-    `;
-
-    bottomStrip.style.display = 'flex';
-
-    gridWrap.querySelectorAll('.pspot').forEach(el => {
+    facilityGrid.querySelectorAll('.spot-cell').forEach(el => {
       el.addEventListener('click', () => handleSpotClick(el));
     });
+  }
 
-    applyHighlights();
+  function renderFloorGroup(floor, map, avail) {
+    const shardLabel = `zone_floor${floor}`;
+    return `
+      <div class="floor-group">
+        <div class="floor-group-header">
+          <div>
+            <div class="fgh-title">Floor ${floor}</div>
+            <div class="fgh-shard">Shard ${floor} · ${shardLabel}</div>
+          </div>
+          <span class="fgh-badge">${avail} free</span>
+        </div>
+        <div class="floor-islands">
+          ${renderIsland('A', [1,2,3], [4,5,6], map, floor)}
+          <div class="drive-aisle">
+            <div class="drive-arrow">↑</div>
+            <div class="drive-track"></div>
+            <div class="drive-label">DRIVE</div>
+            <div class="drive-track"></div>
+            <div class="drive-arrow">↓</div>
+          </div>
+          ${renderIsland('B', [7,8,9], [10,11,12], map, floor)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderIsland(label, row1Nums, row2Nums, map, floor) {
+    return `
+      <div class="island">
+        <div class="island-label">Island ${label}</div>
+        <div class="island-row">${row1Nums.map(n => renderCell(n, map, floor)).join('')}</div>
+        <div class="island-divider"></div>
+        <div class="island-row">${row2Nums.map(n => renderCell(n, map, floor)).join('')}</div>
+      </div>
+    `;
+  }
+
+  function renderCell(num, map, floor) {
+    const spot = map[num];
+    if (!spot) return '';
+    const pad  = String(num).padStart(2, '0');
+    const isHC = spot.features?.includes('disability');
+    return `
+      <div class="spot-cell"
+           data-id="${spot.spotId}"
+           data-status="${spot.status}"
+           data-floor="${floor}"
+           title="Floor ${floor} · P${pad} · ${STATUS_LABEL[spot.status]}">
+        ${isHC ? '<span class="spot-hc">♿</span>' : ''}
+        <div class="spot-dot"></div>
+        <span class="spot-id">P${pad}</span>
+        <span class="spot-lbl">${STATUS_LABEL[spot.status]}</span>
+      </div>
+    `;
+  }
+
+  function updateSidebar() {
+    let available = 0, reserved = 0, occupied = 0;
+    for (let f = 1; f <= 3; f++) {
+      const spots = allSpots[f] || [];
+      available += spots.filter(s => s.status === 'available').length;
+      reserved  += spots.filter(s => s.status === 'reserved' || s.status === 'soft_locked').length;
+      occupied  += spots.filter(s => s.status === 'occupied').length;
+
+      const avail = spots.filter(s => s.status === 'available').length;
+      const pct   = Math.round((avail / 12) * 100);
+      const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--red)';
+      const fill  = document.getElementById(`fmf-${f}`);
+      const label = document.getElementById(`fma-${f}`);
+      if (fill)  { fill.style.width = pct + '%'; fill.style.background = color; }
+      if (label) label.textContent = `${avail}/12 free`;
+    }
+
+    const sAvail    = document.getElementById('s-avail');
+    const sReserved = document.getElementById('s-reserved');
+    const sOccupied = document.getElementById('s-occupied');
+    const badge     = document.getElementById('total-badge');
+    if (sAvail)    sAvail.textContent    = available;
+    if (sReserved) sReserved.textContent = reserved;
+    if (sOccupied) sOccupied.textContent = occupied;
+    if (badge)     badge.textContent     = `${available} / 36 available`;
   }
 
   function handleSpotClick(el) {
     const spotId = el.dataset.id;
-    const spot   = currentSpots.find(s => s.spotId === spotId);
+    const floor  = parseInt(el.dataset.floor);
+    const spot   = (allSpots[floor] || []).find(s => s.spotId === spotId);
     if (!spot) return;
 
     if (spot.status !== 'available') {
@@ -256,35 +249,30 @@ export function initMap(ParkingAPI, toast) {
     selectedSpot = null;
   }
 
-  function applyHighlights() {
-    gridWrap.querySelectorAll('.pspot').forEach(el => el.classList.remove('highlighted'));
-  }
-
   async function loadRecommendations() {
     const bar = document.getElementById('recommend-bar');
     try {
       const result = await ParkingAPI.recommend(currentLevel, currentCriteria);
-      const top5   = result.recommendedOrder.slice(0, 5);
+      const top4   = result.recommendedOrder.slice(0, 4);
 
-      if (top5.length === 0) {
-        bar.innerHTML = `<span class="recommend-label">Best spots:</span><span style="font-size:12px;color:var(--text-4);">No available spots on this floor.</span>`;
+      if (top4.length === 0) {
+        bar.innerHTML = '<span style="font-size:11px;color:var(--text-4);">No spots available</span>';
         return;
       }
 
-      bar.innerHTML = `<span class="recommend-label">Best spots (${currentCriteria}):</span>` +
-        top5.map((num, i) => {
-          const spotId = `${currentLevel}-P${String(num).padStart(2,'0')}`;
-          return `<span class="recommend-spot" onclick="window.__clickSpot('${spotId}')">
-            <span class="rank">#${i+1}</span> P${String(num).padStart(2,'0')}
-          </span>`;
-        }).join('');
+      bar.innerHTML = top4.map((num, i) => {
+        const spotId = `${currentLevel}-P${String(num).padStart(2,'0')}`;
+        return `<span class="rec-chip" onclick="window.__clickRec('${spotId}',${currentLevel})">
+          <span class="rank">#${i+1}</span> P${String(num).padStart(2,'0')}
+        </span>`;
+      }).join('');
     } catch {
-      bar.innerHTML = `<span class="recommend-label">Best spots:</span><span style="font-size:12px;color:var(--text-4);">Unavailable</span>`;
+      bar.innerHTML = '<span style="font-size:11px;color:var(--text-4);">Unavailable</span>';
     }
   }
 
-  window.__clickSpot = (spotId) => {
-    const spot = currentSpots.find(s => s.spotId === spotId);
+  window.__clickRec = (spotId, floor) => {
+    const spot = (allSpots[floor] || []).find(s => s.spotId === spotId);
     if (!spot || spot.status !== 'available') return;
     openModal(spot);
   };
