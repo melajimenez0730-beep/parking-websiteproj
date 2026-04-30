@@ -86,7 +86,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--r-xl);
-      padding: 28px 24px;
+      padding: 32px 28px;
       position: relative;
     }
 
@@ -94,7 +94,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       flex-wrap: wrap;
       gap: 12px;
     }
@@ -113,7 +113,7 @@
     /* ── Entrance label ── */
     .entrance-strip {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       position: relative;
     }
     .entrance-strip::before,
@@ -143,98 +143,111 @@
       padding: 4px 14px;
     }
 
-    /* ── 4-column spot grid ── */
-    .spot-grid {
+    /* ── The lot grid: 2 banks + central aisle ── */
+    .lot-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 48px 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: 1fr 80px 1fr;
+      gap: 0;
       min-height: 320px;
     }
 
-    .spot-col {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    /* ── Parking bank (left / right) ── */
+    .bank {
+      display: grid;
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
     }
 
-    .spot-col-label {
-      text-align: center;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-4);
-      padding: 6px 0 8px;
-      border-bottom: 1px solid var(--border-subtle);
+    .bank-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     /* ── Individual Spot ── */
     .pspot {
       position: relative;
-      border-radius: 10px;
-      border: 1.5px solid var(--border-default);
-      background: var(--bg-elevated, #1a1a22);
+      border-radius: var(--r-sm);
+      border: 2px solid var(--border-default);
+      background: var(--bg-elevated, #1a1a1a);
       cursor: pointer;
       transition: all 0.18s ease;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      padding: 10px 6px 8px;
-      min-height: 116px;
-      user-select: none;
+      gap: 4px;
+      min-height: 90px;
       overflow: hidden;
+      user-select: none;
     }
+
+    /* Dashed lane marking between spots */
+    .bank-left  .pspot { border-right: 2px dashed var(--border-subtle); }
+    .bank-right .pspot { border-left:  2px dashed var(--border-subtle); }
 
     .pspot-num {
       font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 600;
       color: var(--text-4);
-      z-index: 1;
-      letter-spacing: 0.5px;
       line-height: 1;
+      z-index: 1;
     }
 
     .pspot-car {
       z-index: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
+      opacity: 0.85;
+      transition: opacity var(--t-base);
     }
 
     .pspot-status-label {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 10px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       z-index: 1;
-      opacity: 0.75;
       line-height: 1;
     }
 
+    /* HC badge */
     .pspot-hc {
       position: absolute;
       top: 5px;
       right: 5px;
-      font-size: 12px;
-      opacity: 0.8;
+      font-size: 13px;
+      opacity: 0.7;
       z-index: 2;
     }
 
+    /* Click hint on available spots */
+    .pspot[data-status="available"]::after {
+      content: 'TAP TO RESERVE';
+      position: absolute;
+      bottom: 0;
+      left: 0; right: 0;
+      background: rgba(34,197,94,0.15);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--green);
+      text-align: center;
+      padding: 3px 0;
+      opacity: 0;
+      transition: opacity var(--t-base);
+    }
+    .pspot[data-status="available"]:hover::after { opacity: 1; }
+
+    /* Status colors */
     .pspot[data-status="available"] {
       background: var(--green-bg);
       border-color: var(--green-border);
-      border-style: dashed;
     }
-    .pspot[data-status="available"] .pspot-num         { color: var(--green); }
+    .pspot[data-status="available"] .pspot-num    { color: var(--green); }
     .pspot[data-status="available"] .pspot-status-label { color: var(--green); }
     .pspot[data-status="available"]:hover {
-      border-style: solid;
       border-color: var(--green);
-      box-shadow: var(--green-glow), 0 4px 16px rgba(0,0,0,0.35);
+      box-shadow: var(--green-glow), 0 4px 16px rgba(0,0,0,0.4);
       transform: scale(1.04);
       z-index: 5;
     }
@@ -255,52 +268,62 @@
       border-color: var(--red-border);
       cursor: default;
     }
-    .pspot[data-status="occupied"] .pspot-num          { color: var(--red); }
-    .pspot[data-status="occupied"] .pspot-status-label  { color: var(--red); }
+    .pspot[data-status="occupied"] .pspot-num    { color: var(--red); }
+    .pspot[data-status="occupied"] .pspot-status-label { color: var(--red); }
 
+    /* Highlight on smart select */
     .pspot.highlighted {
       box-shadow: 0 0 0 2px var(--accent), var(--accent-glow);
       border-color: var(--accent) !important;
     }
+    .pspot.highlighted .pspot-num { color: var(--accent) !important; }
 
-    /* ── Drive aisle between sections ── */
-    .drive-aisle {
+    /* ── Central Aisle ── */
+    .aisle {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding-top: 38px;
-      gap: 0;
+      justify-content: space-around;
+      padding: 8px 0;
+      position: relative;
     }
 
-    .drive-aisle-arrow {
-      font-size: 13px;
-      color: var(--text-4);
-      line-height: 1;
-      padding: 4px 0;
-    }
-
-    .drive-aisle-track {
-      flex: 1;
+    .aisle::before {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
       width: 2px;
       background: repeating-linear-gradient(
         to bottom,
         var(--border-medium) 0,
-        var(--border-medium) 8px,
-        transparent 8px,
-        transparent 18px
+        var(--border-medium) 12px,
+        transparent 12px,
+        transparent 24px
       );
-      margin: 2px 0;
     }
 
-    .drive-aisle-text {
-      font-size: 8px;
-      font-weight: 800;
+    .aisle-arrow {
+      font-size: 18px;
+      color: var(--text-4);
+      z-index: 1;
+      background: var(--bg-card);
+      padding: 4px;
+      border-radius: 50%;
+      line-height: 1;
+    }
+
+    .aisle-label {
+      font-size: 10px;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 0.5px;
       color: var(--text-4);
       writing-mode: vertical-rl;
-      padding: 6px 2px;
+      z-index: 1;
+      background: var(--bg-card);
+      padding: 4px 2px;
     }
 
     /* ── Bottom labels (exit / grocery) ── */
@@ -482,10 +505,10 @@
 
     .modal-actions { display: flex; gap: 10px; }
 
-    /* Car SVG sizing */
-    .car-svg      { width: 36px; height: 62px; }
-    .empty-svg    { width: 36px; height: 62px; opacity: 0.2; }
+    /* ── Car SVG icons (top-down view) ── */
+    .car-svg { width: 28px; height: 48px; }
 
+    /* Loader */
     .lot-loading {
       display: flex;
       flex-direction: column;
@@ -497,13 +520,11 @@
       font-size: 14px;
     }
 
-    @media (max-width: 680px) {
-      .spot-grid { grid-template-columns: 1fr 1fr 28px 1fr 1fr; gap: 6px; }
-      .pspot { min-height: 88px; padding: 8px 4px 6px; }
-      .car-svg, .empty-svg { width: 26px; height: 44px; }
-      .spot-col-label { font-size: 10px; }
+    @media (max-width: 600px) {
+      .lot-grid { grid-template-columns: 1fr 48px 1fr; }
+      .pspot { min-height: 70px; }
+      .car-svg { width: 20px; height: 34px; }
       .filter-chip span:last-child { display: none; }
-      .drive-aisle-text { display: none; }
     }
   </style>
 </head>
