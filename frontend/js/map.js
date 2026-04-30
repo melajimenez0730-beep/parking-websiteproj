@@ -1,9 +1,14 @@
-const PRIORITY = {
-  entrance:   [1,2,3,4,5,6,7,8,9,10,11,12],
-  exit:       [9,10,5,6,1,2,11,12,7,8,3,4],
-  grocery:    [11,12,7,8,3,4,9,10,5,6,1,2],
-  disability: [3,4,1,2,5,6,7,8,9,10,11,12],
-};
+const ISLANDS_META = [
+  { label: 'A', start: 1   },
+  { label: 'B', start: 37  },
+  { label: 'C', start: 73  },
+  { label: 'D', start: 109 },
+  { label: 'E', start: 145 },
+  { label: 'F', start: 181 },
+];
+
+const SPOTS_PER_ROW    = 18;
+const SPOTS_PER_ISLAND = 36;
 
 const STATUS_LABEL = {
   available: 'Available', soft_locked: 'Held', reserved: 'Reserved', occupied: 'Occupied'
@@ -12,9 +17,10 @@ const STATUS_LABEL = {
 const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disability: '♿' };
 
 export function initMap(ParkingAPI, toast) {
-  let allSpots      = { 1: [], 2: [], 3: [] };
-  let selectedSpot  = null;
-  let currentLevel  = 1;
+  let currentSpots    = [];
+  let allFloorMeta    = { 1: null, 2: null, 3: null };
+  let selectedSpot    = null;
+  let currentFloor    = 1;
   let currentCriteria = 'entrance';
 
   const facilityGrid  = document.getElementById('facility-grid');
@@ -31,9 +37,8 @@ export function initMap(ParkingAPI, toast) {
   const mCancelBtn    = document.getElementById('m-cancel-btn');
 
   mCancelBtn.addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
-
-  document.getElementById('refresh-btn').addEventListener('click', () => loadAll(true));
+  modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+  document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentFloor, true));
 
   document.querySelectorAll('.sort-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -48,9 +53,9 @@ export function initMap(ParkingAPI, toast) {
     card.addEventListener('click', () => {
       document.querySelectorAll('.floor-mini').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-      currentLevel = parseInt(card.dataset.floor);
-      document.getElementById('rec-floor-label').textContent = `(Floor ${currentLevel})`;
-      loadRecommendations();
+      currentFloor = parseInt(card.dataset.floor);
+      document.getElementById('rec-floor-label').textContent = `(Floor ${currentFloor})`;
+      loadFloor(currentFloor);
     });
   });
 
@@ -81,27 +86,26 @@ export function initMap(ParkingAPI, toast) {
       mReserveBtn.disabled = false;
       mReserveBtn.innerHTML = '🔒 Reserve This Spot';
       closeModal();
-      loadAll();
+      loadFloor(currentFloor);
     }
   });
 
-  loadAll();
-  setInterval(loadAll, 30000);
+  init();
+  setInterval(() => loadFloor(currentFloor), 30000);
 
-  async function loadAll(showSpinner = false) {
-    if (showSpinner) {
-      facilityGrid.innerHTML = '<div class="facility-loading"><div class="spinner"></div> Refreshing…</div>';
-    }
-
+  async function init() {
+    facilityGrid.innerHTML = '<div class="facility-loading"><div class="spinner"></div> Loading facility from all shards…</div>';
     try {
       const [f1, f2, f3] = await Promise.all([
         ParkingAPI.getSpots(1),
         ParkingAPI.getSpots(2),
         ParkingAPI.getSpots(3),
       ]);
-      allSpots = { 1: f1, 2: f2, 3: f3 };
-      renderFacility();
-      updateSidebar();
+      allFloorMeta = { 1: f1, 2: f2, 3: f3 };
+      currentSpots = f1;
+      updateFloorCards();
+      renderGrid();
+      updateCounters();
       await loadRecommendations();
     } catch (err) {
       console.error(err);
@@ -109,36 +113,38 @@ export function initMap(ParkingAPI, toast) {
     }
   }
 
-  function renderFacility() {
-    let html = '';
-    for (let floor = 1; floor <= 3; floor++) {
-      const spots = allSpots[floor];
-      const map   = {};
-      spots.forEach(s => { map[s.spotNum] = s; });
-      const avail = spots.filter(s => s.status === 'available').length;
-      html += renderFloorGroup(floor, map, avail);
-      if (floor < 3) html += '<div class="floor-sep"></div>';
+  async function loadFloor(floor, showSpinner = false) {
+    if (showSpinner) {
+      facilityGrid.innerHTML = '<div class="facility-loading"><div class="spinner"></div> Refreshing…</div>';
     }
-    facilityGrid.innerHTML = html;
-
-    facilityGrid.querySelectorAll('.spot-cell').forEach(el => {
-      el.addEventListener('click', () => handleSpotClick(el));
-    });
+    try {
+      const spots = await ParkingAPI.getSpots(floor);
+      currentSpots = spots;
+      allFloorMeta[floor] = spots;
+      renderGrid();
+      updateCounters();
+      updateFloorCards();
+      await loadRecommendations();
+    } catch (err) {
+      console.error(err);
+      toast('Failed to load floor data.', 'error');
+    }
   }
 
-  function renderFloorGroup(floor, map, avail) {
-    const shardLabel = `zone_floor${floor}`;
-    return `
-      <div class="floor-group">
-        <div class="floor-group-header">
-          <div>
-            <div class="fgh-title">Floor ${floor}</div>
-            <div class="fgh-shard">Shard ${floor} · ${shardLabel}</div>
-          </div>
-          <span class="fgh-badge">${avail} free</span>
-        </div>
-        <div class="floor-islands">
-          ${renderIsland('A', [1,2,3], [4,5,6], map, floor)}
+  function renderGrid() {
+    const map = {};
+    currentSpots.forEach(s => { map[s.spotNum] = s; });
+
+    document.getElementById('shard-info').textContent =
+      `Floor ${currentFloor} · ${currentSpots.length} spots · Shard ${currentFloor}`;
+
+    let html = '';
+    ISLANDS_META.forEach((island, idx) => {
+      const row1 = Array.from({ length: SPOTS_PER_ROW }, (_, i) => island.start + i);
+      const row2 = Array.from({ length: SPOTS_PER_ROW }, (_, i) => island.start + SPOTS_PER_ROW + i);
+      html += renderIsland(island.label, row1, row2, map);
+      if (idx < ISLANDS_META.length - 1) {
+        html += `
           <div class="drive-aisle">
             <div class="drive-arrow">↑</div>
             <div class="drive-track"></div>
@@ -146,35 +152,38 @@ export function initMap(ParkingAPI, toast) {
             <div class="drive-track"></div>
             <div class="drive-arrow">↓</div>
           </div>
-          ${renderIsland('B', [7,8,9], [10,11,12], map, floor)}
-        </div>
-      </div>
-    `;
+        `;
+      }
+    });
+
+    facilityGrid.innerHTML = html;
+    facilityGrid.querySelectorAll('.spot-cell').forEach(el => {
+      el.addEventListener('click', () => handleSpotClick(el));
+    });
   }
 
-  function renderIsland(label, row1Nums, row2Nums, map, floor) {
+  function renderIsland(label, row1Nums, row2Nums, map) {
     return `
       <div class="island">
         <div class="island-label">Island ${label}</div>
-        <div class="island-row">${row1Nums.map(n => renderCell(n, map, floor)).join('')}</div>
+        <div class="island-row">${row1Nums.map(n => renderCell(n, map)).join('')}</div>
         <div class="island-divider"></div>
-        <div class="island-row">${row2Nums.map(n => renderCell(n, map, floor)).join('')}</div>
+        <div class="island-row">${row2Nums.map(n => renderCell(n, map)).join('')}</div>
       </div>
     `;
   }
 
-  function renderCell(num, map, floor) {
+  function renderCell(num, map) {
     const spot = map[num];
-    if (!spot) return '';
-    const pad  = String(num).padStart(2, '0');
-    const isHC = spot.features?.includes('disability');
+    if (!spot) return '<div class="spot-cell spot-empty"></div>';
+    const pad   = String(num).padStart(3, '0');
+    const isPWD = spot.spotType === 'PWD';
     return `
-      <div class="spot-cell"
+      <div class="spot-cell${isPWD ? ' pwd' : ''}"
            data-id="${spot.spotId}"
            data-status="${spot.status}"
-           data-floor="${floor}"
-           title="Floor ${floor} · P${pad} · ${STATUS_LABEL[spot.status]}">
-        ${isHC ? '<span class="spot-hc">♿</span>' : ''}
+           title="Floor ${currentFloor} · P${pad} · ${STATUS_LABEL[spot.status]}">
+        ${isPWD ? '<span class="spot-hc">♿</span>' : ''}
         <div class="spot-dot"></div>
         <span class="spot-id">P${pad}</span>
         <span class="spot-lbl">${STATUS_LABEL[spot.status]}</span>
@@ -182,41 +191,44 @@ export function initMap(ParkingAPI, toast) {
     `;
   }
 
-  function updateSidebar() {
-    let available = 0, reserved = 0, occupied = 0;
-    for (let f = 1; f <= 3; f++) {
-      const spots = allSpots[f] || [];
-      available += spots.filter(s => s.status === 'available').length;
-      reserved  += spots.filter(s => s.status === 'reserved' || s.status === 'soft_locked').length;
-      occupied  += spots.filter(s => s.status === 'occupied').length;
-
-      const avail = spots.filter(s => s.status === 'available').length;
-      const pct   = Math.round((avail / 12) * 100);
-      const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--red)';
-      const fill  = document.getElementById(`fmf-${f}`);
-      const label = document.getElementById(`fma-${f}`);
-      if (fill)  { fill.style.width = pct + '%'; fill.style.background = color; }
-      if (label) label.textContent = `${avail}/12 free`;
-    }
+  function updateCounters() {
+    const available = currentSpots.filter(s => s.status === 'available').length;
+    const reserved  = currentSpots.filter(s => s.status === 'reserved' || s.status === 'soft_locked').length;
+    const occupied  = currentSpots.filter(s => s.status === 'occupied').length;
 
     const sAvail    = document.getElementById('s-avail');
     const sReserved = document.getElementById('s-reserved');
     const sOccupied = document.getElementById('s-occupied');
     const badge     = document.getElementById('total-badge');
+
     if (sAvail)    sAvail.textContent    = available;
     if (sReserved) sReserved.textContent = reserved;
     if (sOccupied) sOccupied.textContent = occupied;
-    if (badge)     badge.textContent     = `${available} / 36 available`;
+    if (badge)     badge.textContent     = `${available} / ${currentSpots.length} available`;
+  }
+
+  function updateFloorCards() {
+    for (let f = 1; f <= 3; f++) {
+      const spots = allFloorMeta[f];
+      if (!spots) continue;
+      const avail = spots.filter(s => s.status === 'available').length;
+      const total = spots.length;
+      const pct   = total > 0 ? Math.round((avail / total) * 100) : 0;
+      const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--amber)' : 'var(--red)';
+      const fill  = document.getElementById(`fmf-${f}`);
+      const label = document.getElementById(`fma-${f}`);
+      if (fill)  { fill.style.width = pct + '%'; fill.style.background = color; }
+      if (label) label.textContent = `${avail}/${total} free`;
+    }
   }
 
   function handleSpotClick(el) {
     const spotId = el.dataset.id;
-    const floor  = parseInt(el.dataset.floor);
-    const spot   = (allSpots[floor] || []).find(s => s.spotId === spotId);
+    const spot   = currentSpots.find(s => s.spotId === spotId);
     if (!spot) return;
 
     if (spot.status !== 'available') {
-      toast(`Spot P${String(spot.spotNum).padStart(2,'0')} is ${STATUS_LABEL[spot.status].toLowerCase()}.`, 'info');
+      toast(`Spot P${String(spot.spotNum).padStart(3, '0')} is ${STATUS_LABEL[spot.status].toLowerCase()}.`, 'info');
       return;
     }
 
@@ -225,10 +237,10 @@ export function initMap(ParkingAPI, toast) {
   }
 
   function openModal(spot) {
-    const pad = String(spot.spotNum).padStart(2, '0');
+    const pad = String(spot.spotNum).padStart(3, '0');
     mBadge.textContent  = `P${pad}`;
     mTitle.textContent  = `Reserve Spot P${pad}`;
-    mSub.textContent    = `Floor ${spot.floor_number} · Row ${spot.row} · Column ${spot.col}`;
+    mSub.textContent    = `Floor ${spot.floor_number} · Row ${spot.row} · Col ${spot.col}`;
     mFloor.textContent  = `Level ${spot.floor_number}`;
     mShard.textContent  = `Shard ${spot.floor_number}`;
     mPos.textContent    = `R${spot.row} · C${spot.col}`;
@@ -252,7 +264,7 @@ export function initMap(ParkingAPI, toast) {
   async function loadRecommendations() {
     const bar = document.getElementById('recommend-bar');
     try {
-      const result = await ParkingAPI.recommend(currentLevel, currentCriteria);
+      const result = await ParkingAPI.recommend(currentFloor, currentCriteria);
       const top4   = result.recommendedOrder.slice(0, 4);
 
       if (top4.length === 0) {
@@ -261,9 +273,9 @@ export function initMap(ParkingAPI, toast) {
       }
 
       bar.innerHTML = top4.map((num, i) => {
-        const spotId = `${currentLevel}-P${String(num).padStart(2,'0')}`;
-        return `<span class="rec-chip" onclick="window.__clickRec('${spotId}',${currentLevel})">
-          <span class="rank">#${i+1}</span> P${String(num).padStart(2,'0')}
+        const spotId = `${currentFloor}-P${String(num).padStart(3, '0')}`;
+        return `<span class="rec-chip" onclick="window.__clickRec('${spotId}')">
+          <span class="rank">#${i + 1}</span> P${String(num).padStart(3, '0')}
         </span>`;
       }).join('');
     } catch {
@@ -271,8 +283,8 @@ export function initMap(ParkingAPI, toast) {
     }
   }
 
-  window.__clickRec = (spotId, floor) => {
-    const spot = (allSpots[floor] || []).find(s => s.spotId === spotId);
+  window.__clickRec = (spotId) => {
+    const spot = currentSpots.find(s => s.spotId === spotId);
     if (!spot || spot.status !== 'available') return;
     openModal(spot);
   };

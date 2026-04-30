@@ -1,21 +1,23 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
-const mongoose   = require('mongoose');
+const mongoose    = require('mongoose');
 const ParkingSpot = require('../models/ParkingSpot');
 
 const URI = process.env.MONGO_URI || 'mongodb://localhost:27017/parkingDB';
 
-const FEATURES = {
-  1: ['entrance'],
-  2: ['entrance'],
-  3: ['entrance', 'disability'],
-  4: ['entrance', 'disability'],
-  5: [], 6: [], 7: [], 8: [],
-  9:  ['exit'],
-  10: ['exit'],
-  11: ['grocery'],
-  12: ['grocery'],
-};
+const ISLANDS         = ['A', 'B', 'C', 'D', 'E', 'F'];
+const SPOTS_PER_ROW   = 18;
+const ROWS_PER_ISLAND = 2;
+const SPOTS_PER_ISLAND = SPOTS_PER_ROW * ROWS_PER_ISLAND;
+
+function getFeatures(spotNum, islandIdx) {
+  const features = [];
+  if (islandIdx === 0)                     features.push('entrance');
+  if (islandIdx === 5)                     features.push('exit');
+  if (islandIdx === 2 || islandIdx === 3)  features.push('grocery');
+  if (spotNum <= 2)                        features.push('disability');
+  return features;
+}
 
 async function seed() {
   await mongoose.connect(URI);
@@ -25,22 +27,32 @@ async function seed() {
 
   const spots = [];
   for (let floor = 1; floor <= 3; floor++) {
-    for (let num = 1; num <= 12; num++) {
-      spots.push({
-        spotId:       `${floor}-P${String(num).padStart(2, '0')}`,
-        floor_number: floor,
-        row:          Math.ceil(num / 4),
-        col:          ((num - 1) % 4) + 1,
-        spotNum:      num,
-        status:       'available',
-        features:     FEATURES[num] || [],
-        version:      0,
-      });
+    for (let islandIdx = 0; islandIdx < ISLANDS.length; islandIdx++) {
+      for (let row = 1; row <= ROWS_PER_ISLAND; row++) {
+        for (let col = 1; col <= SPOTS_PER_ROW; col++) {
+          const spotNum = islandIdx * SPOTS_PER_ISLAND + (row - 1) * SPOTS_PER_ROW + col;
+          const spotId  = `${floor}-P${String(spotNum).padStart(3, '0')}`;
+          const isPWD   = spotNum <= 2;
+
+          spots.push({
+            spotId,
+            floor_number: floor,
+            spotNum,
+            row,
+            col,
+            spotType: isPWD ? 'PWD' : 'Standard',
+            status:   'available',
+            features: getFeatures(spotNum, islandIdx),
+            version:  0,
+          });
+        }
+      }
     }
   }
 
   await ParkingSpot.insertMany(spots);
-  console.log(`Seeded ${spots.length} spots (${spots.length / 3} per floor × 3 floors)`);
+  const perFloor = ISLANDS.length * SPOTS_PER_ISLAND;
+  console.log(`Seeded ${spots.length} spots (${perFloor} per floor × 3 floors)`);
 
   await mongoose.disconnect();
 }

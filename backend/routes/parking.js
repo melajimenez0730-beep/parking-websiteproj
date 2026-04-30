@@ -4,11 +4,15 @@ const router     = express.Router();
 const ParkingSpot  = require('../models/ParkingSpot');
 const Transaction  = require('../models/Transaction');
 
+function r(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
 const PRIORITY = {
-  entrance:   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-  exit:       [9, 10, 5, 6, 1, 2, 11, 12, 7, 8, 3, 4],
-  grocery:    [11, 12, 7, 8, 3, 4, 9, 10, 5, 6, 1, 2],
-  disability: [3, 4, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12],
+  entrance:   [...r(1,36),    ...r(37,72),   ...r(73,108),  ...r(109,144), ...r(145,180), ...r(181,216)],
+  exit:       [...r(181,216), ...r(145,180), ...r(109,144), ...r(73,108),  ...r(37,72),   ...r(1,36)],
+  grocery:    [...r(73,108),  ...r(109,144), ...r(37,72),   ...r(145,180), ...r(1,36),    ...r(181,216)],
+  disability: [1, 2, ...r(3, 216)],
 };
 
 const SOFT_LOCK_MS = 3 * 60 * 1000;

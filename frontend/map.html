@@ -6,6 +6,12 @@
   <title>ParkSmart — Facility Monitor</title>
   <link rel="stylesheet" href="css/main.css">
   <style>
+    :root {
+      --blue: #3b82f6;
+      --blue-border: rgba(59,130,246,0.4);
+      --blue-bg: rgba(59,130,246,0.08);
+    }
+
     html, body { height: 100%; overflow: hidden; }
 
     /* ── Two-pane dashboard ── */
@@ -227,41 +233,6 @@
       margin: 0 2px;
     }
 
-    /* ── Per-floor group ── */
-    .floor-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .floor-group-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--r-sm);
-    }
-    .fgh-title {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-2);
-    }
-    .fgh-shard { font-size: 9px; font-family: var(--font-mono); color: var(--text-4); margin-top: 1px; }
-    .fgh-badge { font-size: 11px; font-weight: 700; font-family: var(--font-mono); color: var(--green); }
-
-    /* Two islands + drive aisle */
-    .floor-islands {
-      display: grid;
-      grid-template-columns: 1fr 26px 1fr;
-      gap: 0;
-      flex: 1;
-    }
-
     /* ── Island ── */
     .island { display: flex; flex-direction: column; gap: 5px; }
 
@@ -330,27 +301,29 @@
        SPOT CELL
     ════════════════════════════════════════ */
     .spot-cell {
-      width: 60px;
+      width: 40px;
       flex-shrink: 0;
       border: 1px solid var(--border-default);
-      border-radius: 6px;
+      border-radius: 5px;
       background: var(--bg-elevated, #1a1a22);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 7px 4px 5px;
-      gap: 4px;
+      padding: 5px 2px 4px;
+      gap: 3px;
       cursor: pointer;
       transition: all 0.15s ease;
       user-select: none;
       position: relative;
-      min-height: 78px;
+      min-height: 54px;
     }
 
+    .spot-empty { visibility: hidden; pointer-events: none; }
+
     .spot-dot {
-      width: 20px;
-      height: 20px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       flex-shrink: 0;
       transition: box-shadow 0.15s;
@@ -358,26 +331,30 @@
 
     .spot-id {
       font-family: var(--font-mono);
-      font-size: 10px;
+      font-size: 8px;
       font-weight: 700;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
       line-height: 1;
     }
 
     .spot-lbl {
-      font-size: 7.5px;
+      font-size: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.3px;
       line-height: 1;
       opacity: 0.7;
+      overflow: hidden;
+      max-width: 38px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .spot-hc {
       position: absolute;
-      top: 3px;
-      right: 3px;
-      font-size: 8px;
-      opacity: 0.75;
+      top: 2px;
+      right: 2px;
+      font-size: 7px;
+      opacity: 0.85;
     }
 
     /* Available */
@@ -385,16 +362,16 @@
       border-color: var(--green-border);
       border-style: dashed;
     }
-    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.55); }
+    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.55); }
     .spot-cell[data-status="available"] .spot-id  { color: var(--green); }
     .spot-cell[data-status="available"] .spot-lbl { color: var(--green); }
     .spot-cell[data-status="available"]:hover {
       border-style: solid;
       border-color: var(--green);
       background: var(--green-bg);
-      transform: scale(1.07);
+      transform: scale(1.1);
       z-index: 5;
-      box-shadow: 0 4px 14px rgba(34,197,94,0.2);
+      box-shadow: 0 3px 10px rgba(34,197,94,0.2);
     }
 
     /* Reserved / soft_locked */
@@ -404,7 +381,7 @@
       cursor: default;
     }
     .spot-cell[data-status="reserved"] .spot-dot,
-    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.45); }
+    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 6px rgba(245,158,11,0.45); }
     .spot-cell[data-status="reserved"] .spot-id,
     .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); }
     .spot-cell[data-status="reserved"] .spot-lbl,
@@ -415,9 +392,16 @@
       border-color: var(--red-border);
       cursor: default;
     }
-    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.45); }
+    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 6px rgba(239,68,68,0.45); }
     .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
     .spot-cell[data-status="occupied"] .spot-lbl { color: var(--red); }
+
+    /* PWD — blue always, regardless of status */
+    .spot-cell.pwd                   { border-color: var(--blue-border) !important; border-style: solid !important; }
+    .spot-cell.pwd .spot-dot         { background: var(--blue) !important; box-shadow: 0 0 8px rgba(59,130,246,0.6) !important; }
+    .spot-cell.pwd .spot-id          { color: var(--blue) !important; }
+    .spot-cell.pwd .spot-lbl         { color: var(--blue) !important; }
+    .spot-cell.pwd[data-status="available"]:hover { background: var(--blue-bg) !important; border-color: var(--blue) !important; }
 
     /* Facility loader */
     .facility-loading {
@@ -596,7 +580,7 @@
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--green);"></div> Available</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--amber);"></div> Reserved / Held</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--red);"></div> Occupied</div>
-        <div class="legend-row"><span style="font-size:10px;opacity:0.7;">♿</span> Disability HC</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:var(--blue);"></div> PWD / Disability</div>
       </div>
 
       <!-- Sidebar footer -->

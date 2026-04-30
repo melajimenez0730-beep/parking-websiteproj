@@ -8,6 +8,12 @@ const spotSchema = new mongoose.Schema(
     col:          { type: Number, required: true },
     spotNum:      { type: Number, required: true },
 
+    spotType: {
+      type: String,
+      enum: ['Standard', 'PWD'],
+      default: 'Standard',
+    },
+
     status: {
       type: String,
       enum: ['available', 'soft_locked', 'reserved', 'occupied'],

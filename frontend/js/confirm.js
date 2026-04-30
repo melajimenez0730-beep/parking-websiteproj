@@ -21,7 +21,7 @@ export function initConfirm(ParkingAPI, toast) {
 
   const { spotId, spotNum, floor, row, col, features, lockId, expiresAt, userId } = reservation;
 
-  const padNum   = String(spotNum).padStart(2, '0');
+  const padNum   = String(spotNum).padStart(3, '0');
   const spotLabel = `P${padNum}`;
 
   document.getElementById('c-spot-badge').textContent  = spotLabel;
