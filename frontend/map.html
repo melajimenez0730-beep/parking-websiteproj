@@ -204,73 +204,83 @@
       font-family: var(--font-mono);
     }
 
-    /* ── Facility grid scroll area ── */
+    /* ── Facility grid — fills the full viewport ── */
     .facility-wrap {
       flex: 1;
-      overflow: auto;
-      padding: 20px;
+      overflow: hidden;
+      padding: 12px 16px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .facility-grid {
+      flex: 1;
+      min-height: 0;
       display: flex;
+      width: 100%;
+      align-items: stretch;
       gap: 0;
-      align-items: flex-start;
-      width: max-content;
-      padding-bottom: 12px;
     }
 
-    /* ── Island — tall + narrow, 2 vertical columns ── */
+    /* ── Island — tall + narrow, stretches to fill height ── */
     .island {
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      flex-shrink: 0;
     }
 
     .island-label {
       text-align: center;
-      font-size: 7px;
+      font-size: 9px;
       font-weight: 800;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--text-4);
-      padding: 0 0 5px;
+      padding: 0 0 6px;
+      flex-shrink: 0;
     }
 
     .island-block {
+      flex: 1;
+      min-height: 0;
       display: flex;
-      gap: 3px;
+      gap: 4px;
     }
 
     .spot-col {
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .island-internal-drive {
-      height: 20px;
+      flex-shrink: 0;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 5.5px;
+      font-size: 7px;
       font-weight: 800;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--text-4);
       border-top: 1px dashed var(--border-subtle);
       border-bottom: 1px dashed var(--border-subtle);
-      margin: 3px 0;
+      margin: 4px 0;
     }
 
     /* Main aisle between islands */
     .main-aisle {
-      width: 44px;
+      width: 52px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 22px;
-      gap: 0;
+      padding-top: 26px;
     }
     .aisle-track {
       flex: 1;
@@ -280,46 +290,46 @@
         var(--border-medium) 0,
         var(--border-medium) 6px,
         transparent 6px,
-        transparent 13px
+        transparent 14px
       );
-      margin: 2px 0;
     }
     .aisle-label {
-      font-size: 6px;
+      font-size: 8px;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       color: var(--text-4);
       writing-mode: vertical-rl;
-      padding: 5px 0;
+      padding: 8px 0;
     }
 
     /* ════════════════════════════════════════
-       SPOT CELL — compact square
+       SPOT CELL — scales to fill available space
     ════════════════════════════════════════ */
     .spot-cell {
-      width: 30px;
-      height: 30px;
-      flex-shrink: 0;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
       border: 1px solid var(--border-default);
-      border-radius: 4px;
+      border-radius: 5px;
       background: var(--bg-elevated, #1a1a22);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 4px;
       cursor: pointer;
       transition: all 0.15s ease;
       user-select: none;
       position: relative;
+      overflow: hidden;
     }
 
-    .spot-empty { visibility: hidden; pointer-events: none; width: 30px; height: 30px; flex-shrink: 0; }
+    .spot-empty { flex: 1; min-width: 0; min-height: 0; visibility: hidden; pointer-events: none; }
 
     .spot-dot {
-      width: 10px;
-      height: 10px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       flex-shrink: 0;
       transition: box-shadow 0.15s;
@@ -327,46 +337,46 @@
 
     .spot-id {
       font-family: var(--font-mono);
-      font-size: 6.5px;
+      font-size: 10px;
       font-weight: 700;
       line-height: 1;
     }
 
     .spot-hc {
       position: absolute;
-      top: 1px;
-      right: 1px;
-      font-size: 6px;
+      top: 3px;
+      right: 3px;
+      font-size: 9px;
       line-height: 1;
       opacity: 0.9;
     }
 
     /* Available */
     .spot-cell[data-status="available"] { border-color: var(--green-border); border-style: dashed; }
-    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,0.55); }
+    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 7px rgba(34,197,94,0.6); }
     .spot-cell[data-status="available"] .spot-id  { color: var(--green); }
     .spot-cell[data-status="available"]:hover {
       border-style: solid; border-color: var(--green);
-      background: var(--green-bg); transform: scale(1.15); z-index: 5;
-      box-shadow: 0 2px 8px rgba(34,197,94,0.25);
+      background: var(--green-bg); transform: scale(1.08); z-index: 5;
+      box-shadow: 0 3px 12px rgba(34,197,94,0.3);
     }
 
     /* Reserved / soft_locked */
     .spot-cell[data-status="reserved"],
     .spot-cell[data-status="soft_locked"] { border-color: var(--amber-border); cursor: default; }
     .spot-cell[data-status="reserved"] .spot-dot,
-    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 5px rgba(245,158,11,0.45); }
+    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 7px rgba(245,158,11,0.5); }
     .spot-cell[data-status="reserved"] .spot-id,
     .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); }
 
     /* Occupied */
     .spot-cell[data-status="occupied"] { border-color: var(--red-border); cursor: default; }
-    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 5px rgba(239,68,68,0.45); }
+    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 7px rgba(239,68,68,0.5); }
     .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
 
     /* PWD — blue always, regardless of status */
     .spot-cell.pwd                              { border-color: var(--blue-border) !important; border-style: solid !important; }
-    .spot-cell.pwd .spot-dot                    { background: var(--blue) !important; box-shadow: 0 0 6px rgba(59,130,246,0.6) !important; }
+    .spot-cell.pwd .spot-dot                    { background: var(--blue) !important; box-shadow: 0 0 8px rgba(59,130,246,0.65) !important; }
     .spot-cell.pwd .spot-id                     { color: var(--blue) !important; }
     .spot-cell.pwd[data-status="available"]:hover { background: var(--blue-bg) !important; border-color: var(--blue) !important; }
 
