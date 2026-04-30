@@ -1,5 +1,9 @@
-const LEFT_BANK  = [[1,2],[5,6],[9,10]];
-const RIGHT_BANK = [[3,4],[7,8],[11,12]];
+const SECTION_COLS = [
+  { label: 'A', nums: [1, 2, 3] },
+  { label: 'B', nums: [4, 5, 6] },
+  { label: 'C', nums: [7, 8, 9] },
+  { label: 'D', nums: [10, 11, 12] },
+];
 
 const SHARD = { 1:'Shard 1 · zone_floor1', 2:'Shard 2 · zone_floor2', 3:'Shard 3 · zone_floor3' };
 
@@ -16,8 +20,8 @@ const STATUS_LABEL = {
 
 const FEATURE_ICONS = { entrance:'🚪', exit:'⬅️', grocery:'🛒', disability:'♿' };
 
-function carSVG(color, flip = false) {
-  return `<svg class="car-svg" viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg" ${flip ? 'style="transform:scaleX(-1)"' : ''}>
+function carSVG(color) {
+  return `<svg class="car-svg" viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="4" y="8" width="32" height="56" rx="8" fill="${color}" opacity="0.9"/>
     <rect x="8" y="14" width="24" height="16" rx="4" fill="rgba(0,0,0,0.45)"/>
     <rect x="8" y="44" width="24" height="13" rx="3" fill="rgba(0,0,0,0.35)"/>
@@ -33,10 +37,18 @@ function carSVG(color, flip = false) {
   </svg>`;
 }
 
-function spotCarIcon(status, isRightBank) {
-  if (status === 'occupied') return carSVG('#EF4444', isRightBank);
-  if (status === 'reserved' || status === 'soft_locked') return carSVG('#F59E0B', isRightBank);
-  return '';
+function emptySpotSVG() {
+  return `<svg class="empty-svg" viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="8" width="32" height="56" rx="8" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 4"/>
+    <rect x="10" y="14" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <rect x="12" y="30" width="16" height="10" rx="2" fill="currentColor" opacity="0.12"/>
+  </svg>`;
+}
+
+function spotCarIcon(status) {
+  if (status === 'occupied')                          return carSVG('#EF4444');
+  if (status === 'reserved' || status === 'soft_locked') return carSVG('#F59E0B');
+  return emptySpotSVG();
 }
 
 export function initMap(ParkingAPI, toast) {
@@ -161,50 +173,49 @@ export function initMap(ParkingAPI, toast) {
     const map = {};
     spots.forEach(s => { map[s.spotNum] = s; });
 
-    function renderBank(rows, isRight) {
-      const bankClass = isRight ? 'bank bank-right' : 'bank bank-left';
-      let html = `<div class="${bankClass}">`;
-      rows.forEach(([a, b]) => {
-        html += `<div class="bank-row">`;
-        [a, b].forEach(num => {
-          const spot = map[num];
-          if (!spot) return;
-          const isHC    = spot.features?.includes('disability');
-          const pad     = String(num).padStart(2, '0');
-          const hasCarIcon = spot.status !== 'available';
-
-          html += `
-            <div class="pspot ${isHC ? 'pspot-hc-spot' : ''}"
-                 data-id="${spot.spotId}"
-                 data-status="${spot.status}"
-                 data-num="${num}"
-                 title="P${pad} · ${STATUS_LABEL[spot.status]}">
-              ${isHC ? '<span class="pspot-hc">♿</span>' : ''}
-              <span class="pspot-num">P${pad}</span>
-              ${hasCarIcon ? `<div class="pspot-car">${spotCarIcon(spot.status, isRight)}</div>` : ''}
-              <span class="pspot-status-label">${STATUS_LABEL[spot.status]}</span>
-            </div>
-          `;
-        });
-        html += `</div>`;
-      });
-      html += `</div>`;
-      return html;
+    function renderSpot(num) {
+      const spot = map[num];
+      if (!spot) return '';
+      const pad = String(num).padStart(2, '0');
+      const isHC = spot.features?.includes('disability');
+      return `
+        <div class="pspot"
+             data-id="${spot.spotId}"
+             data-status="${spot.status}"
+             data-num="${num}"
+             title="P${pad} · ${STATUS_LABEL[spot.status]}">
+          ${isHC ? '<span class="pspot-hc">♿</span>' : ''}
+          <span class="pspot-num">P${pad}</span>
+          <div class="pspot-car">${spotCarIcon(spot.status)}</div>
+          <span class="pspot-status-label">${STATUS_LABEL[spot.status]}</span>
+        </div>
+      `;
     }
 
-    const aisleHtml = `
-      <div class="aisle">
-        <div class="aisle-arrow">↓</div>
-        <div class="aisle-label">AISLE</div>
-        <div class="aisle-arrow">↑</div>
+    function renderCol(col) {
+      return `
+        <div class="spot-col">
+          <div class="spot-col-label">${col.label}</div>
+          ${col.nums.map(n => renderSpot(n)).join('')}
+        </div>
+      `;
+    }
+
+    const driveAisle = `
+      <div class="drive-aisle">
+        <div class="drive-aisle-arrow">↑</div>
+        <div class="drive-aisle-track"></div>
+        <div class="drive-aisle-text">DRIVE</div>
+        <div class="drive-aisle-track"></div>
+        <div class="drive-aisle-arrow">↓</div>
       </div>
     `;
 
     gridWrap.innerHTML = `
-      <div class="lot-grid">
-        ${renderBank(LEFT_BANK, false)}
-        ${aisleHtml}
-        ${renderBank(RIGHT_BANK, true)}
+      <div class="spot-grid">
+        ${SECTION_COLS.slice(0, 2).map(renderCol).join('')}
+        ${driveAisle}
+        ${SECTION_COLS.slice(2).map(renderCol).join('')}
       </div>
     `;
 
