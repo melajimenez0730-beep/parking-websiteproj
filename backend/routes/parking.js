@@ -3,6 +3,7 @@ const { v4: uuid } = require('uuid');
 const router     = express.Router();
 const ParkingSpot  = require('../models/ParkingSpot');
 const Transaction  = require('../models/Transaction');
+const User         = require('../models/User');
 
 function r(start, end) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -17,6 +18,16 @@ const PRIORITY = {
 
 const SOFT_LOCK_MS = 3 * 60 * 1000;
 
+async function recordUserStrike(mobileNumber) {
+  const user = await User.findOne({ mobileNumber });
+  if (!user) return;
+  user.strikes += 1;
+  if (user.strikes >= 3 && (!user.lockoutUntil || user.lockoutUntil < new Date())) {
+    user.lockoutUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  }
+  await user.save();
+}
+
 async function releaseExpiredLocks() {
   const expired = await ParkingSpot.find({
     status: 'soft_locked',
@@ -24,6 +35,8 @@ async function releaseExpiredLocks() {
   });
 
   for (const spot of expired) {
+    const mobileNumber = spot.softLock?.mobileNumber;
+
     await ParkingSpot.findOneAndUpdate(
       { _id: spot._id, version: spot.version },
       { $set: { status: 'available', softLock: null }, $inc: { version: 1 } }
@@ -36,7 +49,16 @@ async function releaseExpiredLocks() {
       type: 'expire',
       notes: 'Soft lock expired',
     });
+
+    if (mobileNumber) {
+      recordUserStrike(mobileNumber).catch(e => console.warn('[expire-strike]', e.message));
+    }
   }
+}
+
+async function verifyUserSession(mobileNumber, userToken) {
+  if (!mobileNumber || !userToken) return null;
+  return User.findOne({ mobileNumber, sessionToken: userToken });
 }
 
 router.get('/levels/:level/spots', async (req, res) => {
@@ -77,10 +99,21 @@ router.get('/recommend', async (req, res) => {
 });
 
 router.post('/spots/:spotId/soft-lock', async (req, res) => {
-  const { userId = 'guest', vehicleInfo } = req.body || {};
+  const { userId = 'guest', vehicleInfo, mobileNumber, userToken } = req.body || {};
   const { spotId } = req.params;
 
   try {
+    // Verify user session if credentials provided
+    if (mobileNumber && userToken) {
+      const user = await verifyUserSession(mobileNumber, userToken);
+      if (!user) {
+        return res.status(401).json({ error: 'Invalid session. Please log in again.' });
+      }
+      if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+        return res.status(403).json({ error: 'Account is locked due to repeated no-shows.', lockoutUntil: user.lockoutUntil });
+      }
+    }
+
     try { await releaseExpiredLocks(); } catch (e) { console.warn('[soft-lock] releaseExpiredLocks failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
@@ -97,7 +130,11 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
     const updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version, status: 'available' },
       {
-        $set: { status: 'soft_locked', softLock: { userId, lockId, expiresAt }, vehicle: vehicleInfo || {} },
+        $set: {
+          status: 'soft_locked',
+          softLock: { userId, lockId, expiresAt, mobileNumber: mobileNumber || null },
+          vehicle: vehicleInfo || {},
+        },
         $inc: { version: 1 },
       },
       { new: true }
@@ -115,7 +152,7 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
         spotId, spotNum: spot.spotNum,
         type: 'soft_lock',
         vehicle: vehicleInfo || {},
-        userId,
+        userId: mobileNumber || userId,
       });
     } catch (txErr) {
       console.warn('[soft-lock] transaction log failed (non-fatal):', txErr.message);
@@ -176,6 +213,60 @@ router.post('/spots/:spotId/reserve', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to confirm reservation' });
+  }
+});
+
+router.post('/spots/:spotId/park-now', async (req, res) => {
+  const { mobileNumber, userToken, vehicleInfo } = req.body || {};
+  const { spotId } = req.params;
+
+  if (!mobileNumber || !userToken) {
+    return res.status(400).json({ error: 'mobileNumber and userToken are required' });
+  }
+
+  try {
+    const user = await verifyUserSession(mobileNumber, userToken);
+    if (!user) return res.status(401).json({ error: 'Invalid session. Please log in again.' });
+    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+      return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
+    }
+
+    try { await releaseExpiredLocks(); } catch (e) { console.warn('[park-now] releaseExpiredLocks failed:', e.message); }
+
+    const spot = await ParkingSpot.findOne({ spotId });
+    if (!spot) return res.status(404).json({ error: 'Spot not found' });
+    if (spot.status !== 'available') {
+      return res.status(409).json({ error: 'Spot is not available', currentStatus: spot.status });
+    }
+
+    const updated = await ParkingSpot.findOneAndUpdate(
+      { spotId, version: spot.version, status: 'available' },
+      {
+        $set: { status: 'occupied', occupiedAt: new Date(), vehicle: vehicleInfo || {}, softLock: null },
+        $inc: { version: 1 },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(409).json({ error: 'Concurrent update detected. Please try again.' });
+    }
+
+    const transactionId = uuid();
+    await Transaction.create({
+      transactionId,
+      floor_number: spot.floor_number,
+      spotId,
+      spotNum: spot.spotNum,
+      type: 'park_now',
+      vehicle: vehicleInfo || {},
+      userId: mobileNumber,
+    });
+
+    res.json({ success: true, transactionId, spotId, floor: spot.floor_number });
+  } catch (err) {
+    console.error('[park-now] ERROR:', err);
+    res.status(500).json({ error: 'Failed to park now', detail: err.message });
   }
 });
 

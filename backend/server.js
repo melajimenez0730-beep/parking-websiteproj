@@ -8,6 +8,7 @@ const { connectDB } = require('./config/db');
 const authRoutes    = require('./routes/auth');
 const parkingRoutes = require('./routes/parking');
 const staffRoutes   = require('./routes/staff');
+const userRoutes    = require('./routes/user');
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/', rateLimit({
 app.use('/api/auth',    authRoutes);
 app.use('/api/parking', parkingRoutes);
 app.use('/api/staff',   staffRoutes);
+app.use('/api/user',    userRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 

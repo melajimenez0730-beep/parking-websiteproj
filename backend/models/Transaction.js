@@ -10,7 +10,7 @@ const transactionSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ['soft_lock', 'reserve', 'occupy', 'release', 'expire'],
+      enum: ['soft_lock', 'reserve', 'occupy', 'release', 'expire', 'park_now'],
       required: true,
     },
 

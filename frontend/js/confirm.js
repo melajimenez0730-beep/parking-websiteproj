@@ -1,3 +1,5 @@
+import { UserAPI } from './api.js';
+
 const FEATURE_META = {
   entrance:   { icon: '🚪', label: 'Entrance' },
   exit:       { icon: '⬅️',  label: 'Exit' },
@@ -74,6 +76,9 @@ export function initConfirm(ParkingAPI, toast) {
   function onLockExpired() {
     sessionStorage.removeItem('reservation');
     document.getElementById('expired-overlay').classList.add('show');
+    if (reservation.mobileNumber) {
+      UserAPI.recordStrike(reservation.mobileNumber).catch(e => console.warn('[strike]', e.message));
+    }
   }
 
   function getVehicleInfo() {

@@ -10,7 +10,7 @@ const spotSchema = new mongoose.Schema(
 
     spotType: {
       type: String,
-      enum: ['Standard', 'PWD'],
+      enum: ['Standard', 'PWD', 'Motorcycle'],
       default: 'Standard',
     },
 
@@ -29,9 +29,10 @@ const spotSchema = new mongoose.Schema(
     },
 
     softLock: {
-      userId:    String,
-      lockId:    String,
-      expiresAt: Date,
+      userId:       String,
+      lockId:       String,
+      expiresAt:    Date,
+      mobileNumber: String,
     },
 
     reservedAt: Date,

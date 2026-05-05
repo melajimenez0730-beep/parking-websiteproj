@@ -7,9 +7,12 @@
   <link rel="stylesheet" href="css/main.css">
   <style>
     :root {
-      --blue: #3b82f6;
+      --blue:       #3b82f6;
       --blue-border: rgba(59,130,246,0.4);
-      --blue-bg: rgba(59,130,246,0.08);
+      --blue-bg:    rgba(59,130,246,0.08);
+      --moto:       #a855f7;
+      --moto-border: rgba(168,85,247,0.4);
+      --moto-bg:    rgba(168,85,247,0.08);
     }
 
     html, body { height: 100%; overflow: hidden; }
@@ -380,6 +383,36 @@
     .spot-cell.pwd .spot-id                     { color: var(--blue) !important; }
     .spot-cell.pwd[data-status="available"]:hover { background: var(--blue-bg) !important; border-color: var(--blue) !important; }
 
+    /* Motorcycle — purple always, regardless of status */
+    .spot-cell.moto                              { border-color: var(--moto-border) !important; border-style: solid !important; }
+    .spot-cell.moto .spot-dot                    { background: var(--moto) !important; box-shadow: 0 0 8px rgba(168,85,247,0.65) !important; }
+    .spot-cell.moto .spot-id                     { color: var(--moto) !important; }
+    .spot-cell.moto[data-status="available"]:hover { background: var(--moto-bg) !important; border-color: var(--moto) !important; }
+
+    /* Floor info bar */
+    .floor-info-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 20px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-faint);
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .floor-info-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-3);
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--r-full);
+      padding: 3px 10px;
+    }
+
     /* Facility loader */
     .facility-loading {
       display: flex;
@@ -446,6 +479,42 @@
 </head>
 <body>
 
+  <!-- ── Auth Modal ── -->
+  <div class="reserve-modal-backdrop" id="auth-modal">
+    <div class="reserve-modal">
+      <!-- Step 1: Mobile -->
+      <div id="auth-mobile-step">
+        <div class="modal-spot-badge" style="background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);font-size:24px;">🔐</div>
+        <div class="modal-title">Verify Your Mobile</div>
+        <div class="modal-sub">Enter your mobile number to receive a one-time code.</div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:11px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">Mobile Number</label>
+          <input id="auth-mobile-input" type="tel" placeholder="+63 9XX XXX XXXX"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font-mono);outline:none;" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" style="min-width:90px;" id="auth-cancel-btn">Cancel</button>
+          <button class="btn btn-primary btn-full" id="auth-send-btn">Send OTP</button>
+        </div>
+      </div>
+      <!-- Step 2: OTP -->
+      <div id="auth-otp-step" style="display:none;">
+        <div class="modal-spot-badge" style="background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);font-size:24px;">📱</div>
+        <div class="modal-title">Enter OTP</div>
+        <div class="modal-sub">Enter the 6-digit code sent to your mobile number.</div>
+        <div style="margin-bottom:16px;">
+          <label style="font-size:11px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">One-Time Code</label>
+          <input id="auth-otp-input" type="text" placeholder="000000" maxlength="6"
+            style="width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:24px;font-family:var(--font-mono);letter-spacing:8px;text-align:center;outline:none;" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" style="min-width:90px;" id="auth-back-btn">← Back</button>
+          <button class="btn btn-primary btn-full" id="auth-verify-btn">Verify OTP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Reserve Modal ── -->
   <div class="reserve-modal-backdrop" id="reserve-modal">
     <div class="reserve-modal">
@@ -471,9 +540,17 @@
         </div>
       </div>
       <div class="modal-features" id="m-features"></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" style="min-width:90px;" id="m-cancel-btn">Cancel</button>
-        <button class="btn btn-primary btn-full" id="m-reserve-btn">🔒 Reserve This Spot</button>
+      <div class="modal-actions" style="flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" style="min-width:80px;" id="m-cancel-btn">Cancel</button>
+          <button class="btn btn-primary btn-full" id="m-reserve-btn">🔒 Reserve (3-min hold)</button>
+        </div>
+        <button id="m-park-now-btn"
+          style="width:100%;padding:11px;border-radius:var(--r-sm);background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);color:var(--green);font-weight:700;font-size:14px;cursor:pointer;font-family:var(--font);transition:all 0.15s;"
+          onmouseover="this.style.background='rgba(34,197,94,0.22)'"
+          onmouseout="this.style.background='rgba(34,197,94,0.12)'">
+          🚗 Park Now — Immediate
+        </button>
       </div>
     </div>
   </div>
@@ -558,6 +635,7 @@
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--amber);"></div> Reserved / Held</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--red);"></div> Occupied</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--blue);"></div> PWD / Disability</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:var(--moto);"></div> Motorcycle Zone</div>
       </div>
 
       <!-- Sidebar footer -->
@@ -584,6 +662,13 @@
         </div>
       </div>
 
+      <!-- Floor wayfinding bar -->
+      <div class="floor-info-bar" id="floor-info-bar">
+        <span class="floor-info-tag">🚶 Mall Entrance ↑</span>
+        <span class="floor-info-tag" style="color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim);">🅿 Floor 1</span>
+        <span class="floor-info-tag">➡ Parking Exit →</span>
+      </div>
+
       <!-- Facility grid -->
       <div class="facility-wrap">
         <div class="facility-grid" id="facility-grid">
@@ -598,13 +683,13 @@
   </div>
 
   <script type="module">
-    import { ParkingAPI, toast, initTheme } from './js/api.js';
+    import { ParkingAPI, UserAPI, toast, initTheme } from './js/api.js';
     import { initMap } from './js/map.js';
     initTheme();
     if (sessionStorage.getItem('reservation') || localStorage.getItem('ps_last_reservation')) {
       document.getElementById('my-res-link').style.display = 'inline-flex';
     }
-    initMap(ParkingAPI, toast);
+    initMap(ParkingAPI, UserAPI, toast);
   </script>
 </body>
 </html>

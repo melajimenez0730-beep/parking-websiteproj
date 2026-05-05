@@ -19,6 +19,13 @@ function getFeatures(spotNum, islandIdx) {
   return features;
 }
 
+function getSpotType(floor, spotNum, islandIdx, row) {
+  if (spotNum <= 2)                                           return 'PWD';
+  // Motorcycle zone: Floor 1 only, Island A (islandIdx 0), first row (1–18), spots 3–18
+  if (floor === 1 && islandIdx === 0 && row === 1 && spotNum >= 3 && spotNum <= 18) return 'Motorcycle';
+  return 'Standard';
+}
+
 async function seed() {
   await mongoose.connect(URI);
   console.log('Connected to MongoDB');
@@ -32,7 +39,7 @@ async function seed() {
         for (let col = 1; col <= SPOTS_PER_ROW; col++) {
           const spotNum = islandIdx * SPOTS_PER_ISLAND + (row - 1) * SPOTS_PER_ROW + col;
           const spotId  = `${floor}-P${String(spotNum).padStart(3, '0')}`;
-          const isPWD   = spotNum <= 2;
+          const type    = getSpotType(floor, spotNum, islandIdx, row);
 
           spots.push({
             spotId,
@@ -40,7 +47,7 @@ async function seed() {
             spotNum,
             row,
             col,
-            spotType: isPWD ? 'PWD' : 'Standard',
+            spotType: type,
             status:   'available',
             features: getFeatures(spotNum, islandIdx),
             version:  0,
@@ -53,6 +60,8 @@ async function seed() {
   await ParkingSpot.insertMany(spots);
   const perFloor = ISLANDS.length * SPOTS_PER_ISLAND;
   console.log(`Seeded ${spots.length} spots (${perFloor} per floor × 3 floors)`);
+  console.log(`  PWD spots: 1-2 on all floors`);
+  console.log(`  Motorcycle zone: Floor 1, Island A, spots 3-18`);
 
   await mongoose.disconnect();
 }

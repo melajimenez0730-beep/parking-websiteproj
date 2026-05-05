@@ -17,7 +17,13 @@ const STATUS_LABEL = {
 
 const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disability: '♿' };
 
-export function initMap(ParkingAPI, toast) {
+const FLOOR_LABELS = {
+  1: { left: 'Mall Entrance ↑', right: 'Parking Exit →' },
+  2: { left: 'Mall Entrance ↑', right: 'Way to Floor 3 ↑' },
+  3: { left: 'Mall Entrance ↑', right: 'Way to Floor 2 ↓' },
+};
+
+export function initMap(ParkingAPI, UserAPI, toast) {
   let currentSpots    = [];
   let allFloorMeta    = { 1: null, 2: null, 3: null };
   let selectedSpot    = null;
@@ -35,10 +41,176 @@ export function initMap(ParkingAPI, toast) {
   const mStatus       = document.getElementById('m-status');
   const mFeatures     = document.getElementById('m-features');
   const mReserveBtn   = document.getElementById('m-reserve-btn');
+  const mParkNowBtn   = document.getElementById('m-park-now-btn');
   const mCancelBtn    = document.getElementById('m-cancel-btn');
 
+  const authModal       = document.getElementById('auth-modal');
+  const authMobileStep  = document.getElementById('auth-mobile-step');
+  const authOtpStep     = document.getElementById('auth-otp-step');
+  const authMobileInput = document.getElementById('auth-mobile-input');
+  const authOtpInput    = document.getElementById('auth-otp-input');
+  const authSendBtn     = document.getElementById('auth-send-btn');
+  const authVerifyBtn   = document.getElementById('auth-verify-btn');
+  const authCancelBtn   = document.getElementById('auth-cancel-btn');
+  const authBackBtn     = document.getElementById('auth-back-btn');
+
+  function getUser() {
+    const mobile = localStorage.getItem('user_mobile');
+    const token  = localStorage.getItem('user_token');
+    return mobile && token ? { mobile, token } : null;
+  }
+
+  // ── Auth Modal ────────────────────────────────────────────────────────
+  function openAuthModal() {
+    authMobileStep.style.display = '';
+    authOtpStep.style.display    = 'none';
+    authMobileInput.value = '';
+    authOtpInput.value    = '';
+    authModal.classList.add('open');
+    setTimeout(() => authMobileInput.focus(), 60);
+  }
+
+  function closeAuthModal() {
+    authModal.classList.remove('open');
+  }
+
+  authCancelBtn.addEventListener('click', () => { closeAuthModal(); selectedSpot = null; });
+  authModal.addEventListener('click', e => { if (e.target === authModal) { closeAuthModal(); selectedSpot = null; } });
+
+  authBackBtn.addEventListener('click', () => {
+    authOtpStep.style.display    = 'none';
+    authMobileStep.style.display = '';
+    setTimeout(() => authMobileInput.focus(), 60);
+  });
+
+  authSendBtn.addEventListener('click', async () => {
+    const mobile = authMobileInput.value.trim();
+    if (!mobile) { toast('Enter your mobile number.', 'error'); return; }
+    authSendBtn.disabled    = true;
+    authSendBtn.textContent = 'Sending…';
+    try {
+      const result = await UserAPI.register(mobile);
+      toast(`OTP sent! (Dev code: ${result.otpCode})`, 'info', 8000);
+      authMobileStep.style.display = 'none';
+      authOtpStep.style.display    = '';
+      setTimeout(() => authOtpInput.focus(), 60);
+    } catch (err) {
+      toast(err.message || 'Failed to send OTP.', 'error');
+    } finally {
+      authSendBtn.disabled    = false;
+      authSendBtn.textContent = 'Send OTP';
+    }
+  });
+
+  authVerifyBtn.addEventListener('click', async () => {
+    const mobile = authMobileInput.value.trim();
+    const otp    = authOtpInput.value.trim();
+    if (!otp) { toast('Enter your OTP.', 'error'); return; }
+    authVerifyBtn.disabled    = true;
+    authVerifyBtn.textContent = 'Verifying…';
+    try {
+      const result = await UserAPI.verifyOtp(mobile, otp);
+      localStorage.setItem('user_mobile', result.mobileNumber);
+      localStorage.setItem('user_token',  result.token);
+      closeAuthModal();
+      toast('Verified! Choose your parking option.', 'success');
+      if (selectedSpot) openChoiceModal(selectedSpot);
+    } catch (err) {
+      toast(err.message || 'Invalid OTP.', 'error');
+    } finally {
+      authVerifyBtn.disabled    = false;
+      authVerifyBtn.textContent = 'Verify OTP';
+    }
+  });
+
+  // ── Choice Modal ──────────────────────────────────────────────────────
   mCancelBtn.addEventListener('click', closeModal);
   modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+
+  function openChoiceModal(spot) {
+    const pad = String(spot.spotNum).padStart(3, '0');
+    mBadge.textContent  = `P${pad}`;
+    mTitle.textContent  = `Spot P${pad}`;
+    mSub.textContent    = `Floor ${spot.floor_number} · Row ${spot.row} · Col ${spot.col}`;
+    mFloor.textContent  = `Level ${spot.floor_number}`;
+    mShard.textContent  = `Shard ${spot.floor_number}`;
+    mPos.textContent    = `R${spot.row} · C${spot.col}`;
+    mStatus.textContent = 'Available';
+    mFeatures.innerHTML = (spot.features || []).map(f =>
+      `<span class="pill pill-default" style="font-size:11px;">${FEATURE_ICONS[f] || ''} ${f}</span>`
+    ).join('') || '<span style="font-size:12px;color:var(--text-4);">No special features</span>';
+
+    mReserveBtn.disabled  = false;
+    mReserveBtn.innerHTML = '🔒 Reserve (3-min hold)';
+    mParkNowBtn.disabled  = false;
+    mParkNowBtn.innerHTML = '🚗 Park Now';
+
+    modalBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modalBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    selectedSpot = null;
+  }
+
+  mReserveBtn.addEventListener('click', async () => {
+    if (!selectedSpot) return;
+    const user = getUser();
+    if (!user) { closeModal(); openAuthModal(); return; }
+
+    mReserveBtn.disabled  = true;
+    mReserveBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Holding…';
+
+    try {
+      const userId = 'user_' + Date.now();
+      const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {}, user.mobile, user.token);
+
+      sessionStorage.setItem('reservation', JSON.stringify({
+        spotId:       selectedSpot.spotId,
+        spotNum:      selectedSpot.spotNum,
+        floor:        selectedSpot.floor_number,
+        row:          selectedSpot.row,
+        col:          selectedSpot.col,
+        features:     selectedSpot.features,
+        lockId:       result.lockId,
+        expiresAt:    result.expiresAt,
+        userId,
+        mobileNumber: user.mobile,
+      }));
+
+      window.location.href = 'confirm.html';
+    } catch (err) {
+      toast(err.message || 'Could not hold spot. Try another.', 'error');
+      mReserveBtn.disabled  = false;
+      mReserveBtn.innerHTML = '🔒 Reserve (3-min hold)';
+      closeModal();
+      loadFloor(currentFloor);
+    }
+  });
+
+  mParkNowBtn.addEventListener('click', async () => {
+    if (!selectedSpot) return;
+    const user = getUser();
+    if (!user) { closeModal(); openAuthModal(); return; }
+
+    mParkNowBtn.disabled  = true;
+    mParkNowBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Parking…';
+
+    try {
+      const result = await ParkingAPI.parkNow(selectedSpot.spotId, user.mobile, user.token, {});
+      toast(`Parked at P${String(selectedSpot.spotNum).padStart(3, '0')}! Txn: ${result.transactionId}`, 'success', 5000);
+      closeModal();
+      loadFloor(currentFloor);
+    } catch (err) {
+      toast(err.message || 'Could not park now. Try another spot.', 'error');
+      mParkNowBtn.disabled  = false;
+      mParkNowBtn.innerHTML = '🚗 Park Now';
+    }
+  });
+
+  // ── Wiring ────────────────────────────────────────────────────────────
   document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentFloor, true));
 
   document.querySelectorAll('.sort-chip').forEach(chip => {
@@ -56,45 +228,17 @@ export function initMap(ParkingAPI, toast) {
       card.classList.add('active');
       currentFloor = parseInt(card.dataset.floor);
       document.getElementById('rec-floor-label').textContent = `(Floor ${currentFloor})`;
+      updateFloorInfoBar(currentFloor);
       loadFloor(currentFloor);
     });
   });
 
-  mReserveBtn.addEventListener('click', async () => {
-    if (!selectedSpot) return;
-    mReserveBtn.disabled = true;
-    mReserveBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Holding spot…';
-
-    try {
-      const userId = 'user_' + Date.now();
-      const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {});
-
-      sessionStorage.setItem('reservation', JSON.stringify({
-        spotId:    selectedSpot.spotId,
-        spotNum:   selectedSpot.spotNum,
-        floor:     selectedSpot.floor_number,
-        row:       selectedSpot.row,
-        col:       selectedSpot.col,
-        features:  selectedSpot.features,
-        lockId:    result.lockId,
-        expiresAt: result.expiresAt,
-        userId,
-      }));
-
-      window.location.href = 'confirm.html';
-    } catch (err) {
-      toast(err.message || 'Could not hold spot. Try another.', 'error');
-      mReserveBtn.disabled = false;
-      mReserveBtn.innerHTML = '🔒 Reserve This Spot';
-      closeModal();
-      loadFloor(currentFloor);
-    }
-  });
-
+  // ── Init ──────────────────────────────────────────────────────────────
   init();
   setInterval(() => loadFloor(currentFloor), 30000);
 
   async function init() {
+    updateFloorInfoBar(currentFloor);
     facilityGrid.innerHTML = '<div class="facility-loading"><div class="spinner"></div> Loading facility from all shards…</div>';
     try {
       const [f1, f2, f3] = await Promise.all([
@@ -120,7 +264,7 @@ export function initMap(ParkingAPI, toast) {
     }
     try {
       const spots = await ParkingAPI.getSpots(floor);
-      currentSpots = spots;
+      currentSpots        = spots;
       allFloorMeta[floor] = spots;
       renderGrid();
       updateCounters();
@@ -130,6 +274,17 @@ export function initMap(ParkingAPI, toast) {
       console.error(err);
       toast('Failed to load floor data.', 'error');
     }
+  }
+
+  function updateFloorInfoBar(floor) {
+    const bar = document.getElementById('floor-info-bar');
+    if (!bar) return;
+    const labels = FLOOR_LABELS[floor] || {};
+    bar.innerHTML = `
+      <span class="floor-info-tag">🚶 ${labels.left || ''}</span>
+      <span class="floor-info-tag" style="color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim);">🅿 Floor ${floor}</span>
+      <span class="floor-info-tag">➡ ${labels.right || ''}</span>
+    `;
   }
 
   function renderGrid() {
@@ -184,14 +339,20 @@ export function initMap(ParkingAPI, toast) {
   function renderCell(num, map) {
     const spot = map[num];
     if (!spot) return '<div class="spot-cell spot-empty"></div>';
-    const pad   = String(num).padStart(3, '0');
-    const isPWD = spot.spotType === 'PWD';
+    const pad    = String(num).padStart(3, '0');
+    const isPWD  = spot.spotType === 'PWD';
+    const isMoto = spot.spotType === 'Motorcycle';
+    const cls    = isPWD ? ' pwd' : isMoto ? ' moto' : '';
+    const badge  = isPWD  ? '<span class="spot-hc">♿</span>'
+                 : isMoto ? '<span class="spot-hc" style="font-size:8px;">🏍</span>'
+                 : '';
+    const tipSuffix = isPWD ? ' · PWD' : isMoto ? ' · Motorcycle' : '';
     return `
-      <div class="spot-cell${isPWD ? ' pwd' : ''}"
+      <div class="spot-cell${cls}"
            data-id="${spot.spotId}"
            data-status="${spot.status}"
-           title="P${pad} · ${STATUS_LABEL[spot.status]}">
-        ${isPWD ? '<span class="spot-hc">♿</span>' : ''}
+           title="P${pad} · ${STATUS_LABEL[spot.status]}${tipSuffix}">
+        ${badge}
         <div class="spot-dot"></div>
         <span class="spot-id">P${pad}</span>
       </div>
@@ -229,7 +390,7 @@ export function initMap(ParkingAPI, toast) {
     }
   }
 
-  function handleSpotClick(el) {
+  async function handleSpotClick(el) {
     const spotId = el.dataset.id;
     const spot   = currentSpots.find(s => s.spotId === spotId);
     if (!spot) return;
@@ -240,32 +401,24 @@ export function initMap(ParkingAPI, toast) {
     }
 
     selectedSpot = spot;
-    openModal(spot);
-  }
 
-  function openModal(spot) {
-    const pad = String(spot.spotNum).padStart(3, '0');
-    mBadge.textContent  = `P${pad}`;
-    mTitle.textContent  = `Reserve Spot P${pad}`;
-    mSub.textContent    = `Floor ${spot.floor_number} · Row ${spot.row} · Col ${spot.col}`;
-    mFloor.textContent  = `Level ${spot.floor_number}`;
-    mShard.textContent  = `Shard ${spot.floor_number}`;
-    mPos.textContent    = `R${spot.row} · C${spot.col}`;
-    mStatus.textContent = 'Available';
-    mFeatures.innerHTML = (spot.features || []).map(f =>
-      `<span class="pill pill-default" style="font-size:11px;">${FEATURE_ICONS[f] || ''} ${f}</span>`
-    ).join('') || '<span style="font-size:12px;color:var(--text-4);">No special features</span>';
+    const user = getUser();
+    if (!user) {
+      openAuthModal();
+      return;
+    }
 
-    mReserveBtn.disabled = false;
-    mReserveBtn.innerHTML = '🔒 Reserve This Spot';
-    modalBackdrop.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
+    try {
+      const status = await UserAPI.status(user.mobile);
+      if (status.locked) {
+        const until = new Date(status.lockoutUntil).toLocaleString();
+        toast(`Account locked until ${until}. (3 no-show strikes recorded)`, 'error');
+        selectedSpot = null;
+        return;
+      }
+    } catch { /* network error — proceed */ }
 
-  function closeModal() {
-    modalBackdrop.classList.remove('open');
-    document.body.style.overflow = '';
-    selectedSpot = null;
+    openChoiceModal(spot);
   }
 
   async function loadRecommendations() {
@@ -293,6 +446,9 @@ export function initMap(ParkingAPI, toast) {
   window.__clickRec = (spotId) => {
     const spot = currentSpots.find(s => s.spotId === spotId);
     if (!spot || spot.status !== 'available') return;
-    openModal(spot);
+    selectedSpot = spot;
+    const user = getUser();
+    if (!user) { openAuthModal(); return; }
+    openChoiceModal(spot);
   };
 }

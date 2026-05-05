@@ -31,17 +31,34 @@ export const ParkingAPI = {
   recommend: (level, criteria) =>
     request('GET', `/parking/recommend?level=${level}&criteria=${criteria}`),
 
-  softLock: (spotId, userId, vehicleInfo) =>
-    request('POST', `/parking/spots/${spotId}/soft-lock`, { userId, vehicleInfo }),
+  softLock: (spotId, userId, vehicleInfo, mobileNumber = null, userToken = null) =>
+    request('POST', `/parking/spots/${spotId}/soft-lock`, { userId, vehicleInfo, mobileNumber, userToken }),
 
   reserve: (spotId, lockId, vehicleInfo) =>
     request('POST', `/parking/spots/${spotId}/reserve`, { lockId, vehicleInfo }),
+
+  parkNow: (spotId, mobileNumber, userToken, vehicleInfo = {}) =>
+    request('POST', `/parking/spots/${spotId}/park-now`, { mobileNumber, userToken, vehicleInfo }),
 
   occupy: (spotId, vehicleInfo) =>
     request('POST', `/parking/spots/${spotId}/occupy`, { vehicleInfo }),
 
   release: (spotId) =>
     request('DELETE', `/parking/spots/${spotId}/release`),
+};
+
+export const UserAPI = {
+  register: (mobileNumber) =>
+    request('POST', '/user/register', { mobileNumber }),
+
+  verifyOtp: (mobileNumber, otpCode) =>
+    request('POST', '/user/verify-otp', { mobileNumber, otpCode }),
+
+  status: (mobile) =>
+    request('GET', `/user/status?mobile=${encodeURIComponent(mobile)}`),
+
+  recordStrike: (mobileNumber) =>
+    request('POST', '/user/strike', { mobileNumber }),
 };
 
 export const AuthAPI = {
