@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema({
   lockoutUntil: { type: Date, default: null },
 }, { timestamps: true, collection: 'users' });
 
-userSchema.index({ mobileNumber: 1 });
 userSchema.index({ sessionToken: 1 }, { sparse: true });
 
 module.exports = mongoose.model('User', userSchema);
