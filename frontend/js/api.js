@@ -48,6 +48,9 @@ export const ParkingAPI = {
 
   release: (spotId) =>
     request('DELETE', `/parking/spots/${spotId}/release`),
+
+  completeExit: (spotId) =>
+    request('POST', `/parking/spots/${spotId}/complete-exit`),
 };
 
 export const UserAPI = {

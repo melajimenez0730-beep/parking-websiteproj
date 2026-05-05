@@ -530,6 +530,27 @@
     .action-toggle:hover  { background: var(--bg-card); color: var(--text-2); }
     .action-toggle.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); font-weight: 700; }
 
+    /* Exiting state — flashing yellow */
+    @keyframes flash-exit-dot {
+      0%, 100% { box-shadow: 0 0 7px rgba(251,191,36,0.5); opacity: 1; }
+      50%       { box-shadow: 0 0 18px rgba(251,191,36,1);   opacity: 0.35; }
+    }
+    @keyframes flash-exit-cell {
+      0%, 100% { background: var(--bg-elevated, #1a1a22); }
+      50%       { background: rgba(251,191,36,0.12); }
+    }
+    .spot-cell[data-status="exiting"] {
+      border-color: rgba(251,191,36,0.6) !important;
+      border-style: solid !important;
+      cursor: pointer;
+      animation: flash-exit-cell 0.75s ease-in-out infinite;
+    }
+    .spot-cell[data-status="exiting"] .spot-dot {
+      background: #fbbf24 !important;
+      animation: flash-exit-dot 0.75s ease-in-out infinite;
+    }
+    .spot-cell[data-status="exiting"] .spot-id { color: #fbbf24 !important; }
+
     /* Spot hover tooltip */
     #spot-tooltip {
       position: fixed;
@@ -549,6 +570,25 @@
 
   <!-- Spot hover tooltip -->
   <div id="spot-tooltip"></div>
+
+  <!-- ── Exit Confirmation Modal ── -->
+  <div class="reserve-modal-backdrop" id="exit-modal">
+    <div class="reserve-modal" style="max-width:360px;">
+      <div class="modal-spot-badge" id="exit-modal-badge"
+        style="background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.35);color:var(--red);margin-bottom:18px;">P--</div>
+      <div class="modal-title" style="margin-bottom:6px;">Complete Exit</div>
+      <div class="modal-sub" id="exit-modal-sub" style="margin-bottom:24px;">Floor — · Confirm payment received</div>
+      <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:24px;font-size:12px;color:var(--text-3);line-height:1.5;">
+        ⚠ This will start a <strong style="color:#fbbf24;">30-second exit grace period</strong>.<br>
+        The spot will flash yellow, then automatically free up.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" style="min-width:90px;" id="exit-cancel-btn">Cancel</button>
+        <button class="btn btn-full" id="exit-confirm-btn"
+          style="background:var(--red);border-color:var(--red);color:#fff;flex:1;">✓ Complete Exit</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Action Tab Modal ── -->
   <div class="reserve-modal-backdrop" id="action-modal">
@@ -709,6 +749,7 @@
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--green);"></div> Available</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--amber);"></div> Reserved / Held</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--red);"></div> Occupied</div>
+        <div class="legend-row"><div class="legend-dot-sm" style="background:#fbbf24;animation:flash-exit-dot 0.75s ease-in-out infinite;"></div> Exiting (30s)</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--blue);"></div> PWD / Disability</div>
         <div class="legend-row"><div class="legend-dot-sm" style="background:var(--moto);"></div> Motorcycle Zone</div>
       </div>

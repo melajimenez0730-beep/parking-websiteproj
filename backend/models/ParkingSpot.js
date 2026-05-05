@@ -16,7 +16,7 @@ const spotSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['available', 'soft_locked', 'reserved', 'occupied'],
+      enum: ['available', 'soft_locked', 'reserved', 'occupied', 'exiting'],
       default: 'available',
     },
 
@@ -40,6 +40,7 @@ const spotSchema = new mongoose.Schema(
     reservedAt: Date,
     reservedBy: String,
     occupiedAt: Date,
+    exitingAt:  Date,
 
     version: { type: Number, default: 0 },
   },

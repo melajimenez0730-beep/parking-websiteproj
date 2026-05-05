@@ -12,7 +12,7 @@ const ISLANDS_META = [
 ];
 
 const STATUS_LABEL = {
-  available: 'Available', soft_locked: 'Held', reserved: 'Reserved', occupied: 'Occupied'
+  available: 'Available', soft_locked: 'Held', reserved: 'Reserved', occupied: 'Occupied', exiting: 'Exiting'
 };
 
 const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disability: '♿' };
@@ -60,10 +60,12 @@ export function initMap(ParkingAPI, UserAPI, toast) {
   let currentSpots    = [];
   let allFloorMeta    = { 1: null, 2: null, 3: null };
   let selectedSpot    = null;
+  let exitSpot        = null;
   let selectedAction  = 'reserve';
   let currentFloor    = 1;
   let currentCriteria = 'entrance';
   let tooltipTimer    = null;
+  let exitRefreshTimer = null;
 
   const facilityGrid = document.getElementById('facility-grid');
 
@@ -90,6 +92,54 @@ export function initMap(ParkingAPI, UserAPI, toast) {
   const mOtpSub             = document.getElementById('m-otp-sub');
   const mOtpBackBtn         = document.getElementById('m-otp-back-btn');
   const mOtpVerifyBtn       = document.getElementById('m-otp-verify-btn');
+
+  // ── Exit modal ───────────────────────────────────────────────────────
+  const exitModal      = document.getElementById('exit-modal');
+  const exitModalBadge = document.getElementById('exit-modal-badge');
+  const exitModalSub   = document.getElementById('exit-modal-sub');
+  const exitCancelBtn  = document.getElementById('exit-cancel-btn');
+  const exitConfirmBtn = document.getElementById('exit-confirm-btn');
+
+  function openExitModal(spot) {
+    const pad   = String(spot.spotNum).padStart(3, '0');
+    const since = spot.occupiedAt ? new Date(spot.occupiedAt) : null;
+    const secs  = since ? Math.round((Date.now() - since) / 1000) : 0;
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const dur = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    exitModalBadge.textContent = `P${pad}`;
+    exitModalSub.textContent   = `Floor ${spot.floor_number} · Occupied ${dur} · Confirm payment received`;
+    exitSpot = spot;
+    exitModal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  exitCancelBtn.addEventListener('click', () => {
+    exitModal.classList.remove('open');
+    document.body.style.overflow = '';
+    exitSpot = null;
+  });
+  exitModal.addEventListener('click', e => { if (e.target === exitModal) exitCancelBtn.click(); });
+
+  exitConfirmBtn.addEventListener('click', async () => {
+    if (!exitSpot) return;
+    exitConfirmBtn.disabled    = true;
+    exitConfirmBtn.textContent = 'Processing…';
+    try {
+      await ParkingAPI.completeExit(exitSpot.spotId);
+      const pad = String(exitSpot.spotNum).padStart(3, '0');
+      toast(`P${pad} — exit grace period started. Clears in 30 seconds.`, 'success', 5000);
+      exitModal.classList.remove('open');
+      document.body.style.overflow = '';
+      exitSpot = null;
+      loadFloor(currentFloor);
+    } catch (err) {
+      toast(err.message || 'Failed to complete exit.', 'error');
+    } finally {
+      exitConfirmBtn.disabled    = false;
+      exitConfirmBtn.textContent = '✓ Complete Exit';
+    }
+  });
 
   // ── Action toggle ────────────────────────────────────────────────────
   actionToggleReserve.addEventListener('click', () => {
@@ -436,6 +486,16 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     });
 
     facilityGrid.innerHTML = html;
+
+    // If any spot is exiting, schedule a targeted reload just after its 30-sec grace ends
+    clearTimeout(exitRefreshTimer);
+    const exitingSpots = currentSpots.filter(s => s.status === 'exiting' && s.exitingAt);
+    if (exitingSpots.length > 0) {
+      const soonest = Math.min(...exitingSpots.map(s => new Date(s.exitingAt).getTime() + 30000));
+      const delay   = Math.max(1500, soonest - Date.now() + 1500);
+      exitRefreshTimer = setTimeout(() => loadFloor(currentFloor), delay);
+    }
+
     facilityGrid.querySelectorAll('.spot-cell').forEach(el => {
       el.addEventListener('click', () => handleSpotClick(el));
       if (el.dataset.status && el.dataset.status !== 'available') {
@@ -482,6 +542,23 @@ export function initMap(ParkingAPI, UserAPI, toast) {
       statusHtml = `
         <div style="color:var(--amber);font-weight:700;font-size:12px;">✓ RESERVED</div>
         <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Expires in <span id="tt-countdown" style="font-family:var(--font-mono);color:var(--amber);">${countdown()}</span></div>
+      `;
+      if (tooltipTimer) clearInterval(tooltipTimer);
+      tooltipTimer = setInterval(() => {
+        const cd = document.getElementById('tt-countdown');
+        if (cd) cd.textContent = countdown();
+        else { clearInterval(tooltipTimer); tooltipTimer = null; }
+      }, 1000);
+    } else if (spot.status === 'exiting') {
+      const exitExpiry = spot.exitingAt ? new Date(new Date(spot.exitingAt).getTime() + 30 * 1000) : null;
+      const countdown = () => {
+        if (!exitExpiry) return '--';
+        return Math.max(0, Math.round((exitExpiry - Date.now()) / 1000)) + 's';
+      };
+      statusHtml = `
+        <div style="color:#fbbf24;font-weight:700;font-size:12px;">⚠ EXITING</div>
+        <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Clears in <span id="tt-countdown" style="font-family:var(--font-mono);color:#fbbf24;">${countdown()}</span></div>
+        <div style="color:var(--text-4);font-size:10px;margin-top:2px;">Safety lock active — unavailable</div>
       `;
       if (tooltipTimer) clearInterval(tooltipTimer);
       tooltipTimer = setInterval(() => {
@@ -616,6 +693,10 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     const spot   = currentSpots.find(s => s.spotId === spotId);
     if (!spot) return;
 
+    if (spot.status === 'occupied') {
+      openExitModal(spot);
+      return;
+    }
     if (spot.status !== 'available') {
       toast(`Spot P${String(spot.spotNum).padStart(3, '0')} is ${STATUS_LABEL[spot.status].toLowerCase()}.`, 'info');
       return;

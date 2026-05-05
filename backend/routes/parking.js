@@ -16,8 +16,9 @@ const PRIORITY = {
   disability: [1, 2, ...r(3, 216)],
 };
 
-const SOFT_LOCK_MS       = 3 * 60 * 1000;
+const SOFT_LOCK_MS        = 3 * 60 * 1000;
 const RESERVED_TIMEOUT_MS = 30 * 60 * 1000;
+const EXIT_GRACE_MS       = 30 * 1000;
 
 async function recordUserStrike(mobileNumber) {
   let user = await User.findOne({ mobileNumber });
@@ -86,8 +87,31 @@ async function releaseExpiredReservations() {
   }
 }
 
+async function releaseExpiredExits() {
+  const cutoff  = new Date(Date.now() - EXIT_GRACE_MS);
+  const expired = await ParkingSpot.find({ status: 'exiting', exitingAt: { $lt: cutoff } });
+
+  for (const spot of expired) {
+    await ParkingSpot.findOneAndUpdate(
+      { _id: spot._id, version: spot.version },
+      {
+        $set: { status: 'available', mobileNumber: null, vehicle: null, exitingAt: null, occupiedAt: null },
+        $inc: { version: 1 },
+      }
+    );
+    await Transaction.create({
+      transactionId: uuid(),
+      floor_number:  spot.floor_number,
+      spotId:        spot.spotId,
+      spotNum:       spot.spotNum,
+      type:          'release',
+      notes:         'Auto-released after 30-second exit grace period',
+    });
+  }
+}
+
 async function releaseExpired() {
-  await Promise.allSettled([releaseExpiredLocks(), releaseExpiredReservations()]);
+  await Promise.allSettled([releaseExpiredLocks(), releaseExpiredReservations(), releaseExpiredExits()]);
 }
 
 async function verifyUserSession(mobileNumber, userToken) {
@@ -100,6 +124,7 @@ async function hasActiveSpot(mobileNumber) {
   const spot = await ParkingSpot.findOne({
     mobileNumber,
     status: { $in: ['soft_locked', 'reserved', 'occupied'] },
+    // 'exiting' excluded — payment confirmed, mobile is free to rebook
   });
   return !!spot;
 }
@@ -425,6 +450,51 @@ router.delete('/spots/:spotId/release', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to release spot' });
+  }
+});
+
+// POST /spots/:spotId/complete-exit  (staff: payment confirmed → 30-sec exit grace)
+router.post('/spots/:spotId/complete-exit', async (req, res) => {
+  const { spotId } = req.params;
+
+  try {
+    const spot = await ParkingSpot.findOne({ spotId });
+    if (!spot) return res.status(404).json({ error: 'Spot not found' });
+    if (spot.status !== 'occupied') {
+      return res.status(409).json({ error: 'Spot must be occupied to complete exit', currentStatus: spot.status });
+    }
+
+    const exitingAt = new Date();
+    const updated   = await ParkingSpot.findOneAndUpdate(
+      { spotId, version: spot.version, status: 'occupied' },
+      {
+        $set: { status: 'exiting', exitingAt, mobileNumber: null },
+        $inc: { version: 1 },
+      },
+      { new: true }
+    );
+
+    if (!updated) return res.status(409).json({ error: 'Concurrent update detected.' });
+
+    const durationMinutes = spot.occupiedAt
+      ? Math.round((exitingAt - spot.occupiedAt) / 60000)
+      : null;
+
+    await Transaction.create({
+      transactionId: uuid(),
+      floor_number:  spot.floor_number,
+      spotId,
+      spotNum:       spot.spotNum,
+      type:          'complete_exit',
+      vehicle:       spot.vehicle,
+      userId:        spot.mobileNumber,
+      durationMinutes,
+    });
+
+    res.json({ success: true, exitingAt, expiresInSeconds: 30, durationMinutes });
+  } catch (err) {
+    console.error('[complete-exit]', err);
+    res.status(500).json({ error: 'Failed to complete exit.' });
   }
 });
 
