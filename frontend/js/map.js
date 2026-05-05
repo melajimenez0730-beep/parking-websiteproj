@@ -95,11 +95,25 @@ export function initMap(ParkingAPI, UserAPI, toast) {
   });
 
   // ── Logout ───────────────────────────────────────────────────────────
-  mLogoutBtn.addEventListener('click', () => {
+  mLogoutBtn.addEventListener('click', async () => {
+    const session = getSession();
+    mLogoutBtn.textContent = 'Logging out…';
+    mLogoutBtn.disabled    = true;
+
+    if (session) {
+      try {
+        await UserAPI.logout(session.mobile, session.token);
+      } catch (err) {
+        console.warn('[logout]', err.message);
+      }
+    }
+
     clearSession();
     mSessionInfo.style.display = 'none';
     mMobileWrap.style.display  = '';
-    mMobileInput.value = '';
+    mMobileInput.value         = '';
+    mLogoutBtn.textContent     = 'Log out';
+    mLogoutBtn.disabled        = false;
     setTimeout(() => mMobileInput.focus(), 60);
   });
 
@@ -204,6 +218,10 @@ export function initMap(ParkingAPI, UserAPI, toast) {
         if (check.locked) {
           const until = new Date(check.lockoutUntil).toLocaleString();
           toast(`Number locked until ${until}. (${check.strikes}/3 strikes)`, 'error');
+          return;
+        }
+        if (check.hasClaim) {
+          toast('This mobile number is already logged in on another device. The original user must log out first.', 'error');
           return;
         }
         if (check.hasActiveSession) {

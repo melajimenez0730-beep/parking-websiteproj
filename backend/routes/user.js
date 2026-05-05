@@ -123,8 +123,8 @@ router.post('/strike', async (req, res) => {
 });
 
 // POST /api/user/token-login
-// Validates demo OTP and creates/returns a persistent session token.
-// Frontend stores this token so returning users skip the OTP step entirely.
+// Validates demo OTP, claims the mobile number, and issues a session token.
+// Once claimed, no other session can use the same mobile number.
 const DEMO_OTPS = ['123456', '888888', '000000'];
 
 router.post('/token-login', async (req, res) => {
@@ -141,6 +141,13 @@ router.post('/token-login', async (req, res) => {
       return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
     }
 
+    // Block if this mobile is already claimed by another active session
+    if (user && user.sessionToken) {
+      return res.status(409).json({
+        error: 'This mobile number is already in use by another session. The original user must log out first.',
+      });
+    }
+
     const sessionToken = uuid();
     if (user) {
       user.verified     = true;
@@ -154,6 +161,23 @@ router.post('/token-login', async (req, res) => {
   } catch (err) {
     console.error('[user/token-login]', err);
     res.status(500).json({ error: 'Login failed.' });
+  }
+});
+
+// POST /api/user/logout
+// Clears the session token from DB so the mobile number can be used again.
+router.post('/logout', async (req, res) => {
+  const { mobileNumber, token } = req.body || {};
+  if (!mobileNumber) return res.status(400).json({ error: 'mobileNumber required' });
+
+  try {
+    await User.findOneAndUpdate(
+      { mobileNumber, sessionToken: token },
+      { $unset: { sessionToken: '' } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Logout failed.' });
   }
 });
 

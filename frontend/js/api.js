@@ -54,6 +54,9 @@ export const UserAPI = {
   tokenLogin: (mobileNumber, otpCode) =>
     request('POST', '/user/token-login', { mobileNumber, otpCode }),
 
+  logout: (mobileNumber, token) =>
+    request('POST', '/user/logout', { mobileNumber, token }),
+
   status: (mobile) =>
     request('GET', `/user/status?mobile=${encodeURIComponent(mobile)}`),
 
