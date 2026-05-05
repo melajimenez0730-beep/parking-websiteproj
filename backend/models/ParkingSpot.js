@@ -28,6 +28,8 @@ const spotSchema = new mongoose.Schema(
       owner: String,
     },
 
+    mobileNumber: { type: String, default: null },
+
     softLock: {
       userId:       String,
       lockId:       String,
@@ -47,5 +49,6 @@ const spotSchema = new mongoose.Schema(
 spotSchema.index({ floor_number: 1, status: 1 });
 spotSchema.index({ floor_number: 1, spotNum: 1 }, { unique: true });
 spotSchema.index({ 'softLock.expiresAt': 1 }, { sparse: true });
+spotSchema.index({ mobileNumber: 1 }, { sparse: true });
 
 module.exports = mongoose.model('ParkingSpot', spotSchema);

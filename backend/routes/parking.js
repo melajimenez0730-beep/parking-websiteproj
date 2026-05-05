@@ -39,7 +39,7 @@ async function releaseExpiredLocks() {
 
     await ParkingSpot.findOneAndUpdate(
       { _id: spot._id, version: spot.version },
-      { $set: { status: 'available', softLock: null }, $inc: { version: 1 } }
+      { $set: { status: 'available', softLock: null, mobileNumber: null }, $inc: { version: 1 } }
     );
     await Transaction.create({
       transactionId: uuid(),
@@ -59,6 +59,15 @@ async function releaseExpiredLocks() {
 async function verifyUserSession(mobileNumber, userToken) {
   if (!mobileNumber || !userToken) return null;
   return User.findOne({ mobileNumber, sessionToken: userToken });
+}
+
+async function hasActiveSpot(mobileNumber) {
+  if (!mobileNumber) return false;
+  const spot = await ParkingSpot.findOne({
+    mobileNumber,
+    status: { $in: ['soft_locked', 'reserved', 'occupied'] },
+  });
+  return !!spot;
 }
 
 router.get('/levels/:level/spots', async (req, res) => {
@@ -114,6 +123,10 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
       }
     }
 
+    if (mobileNumber && await hasActiveSpot(mobileNumber)) {
+      return res.status(409).json({ error: 'This mobile number already has an active parking spot.' });
+    }
+
     try { await releaseExpiredLocks(); } catch (e) { console.warn('[soft-lock] releaseExpiredLocks failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
@@ -132,6 +145,7 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
       {
         $set: {
           status: 'soft_locked',
+          mobileNumber: mobileNumber || null,
           softLock: { userId, lockId, expiresAt, mobileNumber: mobileNumber || null },
           vehicle: vehicleInfo || {},
         },
@@ -189,7 +203,14 @@ router.post('/spots/:spotId/reserve', async (req, res) => {
     const updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version, 'softLock.lockId': lockId },
       {
-        $set: { status: 'reserved', vehicle, reservedAt: new Date(), reservedBy: vehicle?.owner || 'guest', softLock: null },
+        $set: {
+          status: 'reserved',
+          mobileNumber: spot.softLock?.mobileNumber || null,
+          vehicle,
+          reservedAt: new Date(),
+          reservedBy: vehicle?.owner || 'guest',
+          softLock: null,
+        },
         $inc: { version: 1 },
       },
       { new: true }
@@ -224,7 +245,7 @@ router.get('/check-mobile', async (req, res) => {
     await releaseExpiredLocks();
 
     const [activeSpot, user] = await Promise.all([
-      ParkingSpot.findOne({ status: 'soft_locked', 'softLock.mobileNumber': mobile }),
+      ParkingSpot.findOne({ mobileNumber: mobile, status: { $in: ['soft_locked', 'reserved', 'occupied'] } }),
       User.findOne({ mobileNumber: mobile }),
     ]);
 
@@ -256,6 +277,10 @@ router.post('/spots/:spotId/park-now', async (req, res) => {
       return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
     }
 
+    if (await hasActiveSpot(mobileNumber)) {
+      return res.status(409).json({ error: 'This mobile number already has an active parking spot.' });
+    }
+
     try { await releaseExpiredLocks(); } catch (e) { console.warn('[park-now] releaseExpiredLocks failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
@@ -267,7 +292,7 @@ router.post('/spots/:spotId/park-now', async (req, res) => {
     const updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version, status: 'available' },
       {
-        $set: { status: 'occupied', occupiedAt: new Date(), vehicle: vehicleInfo || {}, softLock: null },
+        $set: { status: 'occupied', mobileNumber, occupiedAt: new Date(), vehicle: vehicleInfo || {}, softLock: null },
         $inc: { version: 1 },
       },
       { new: true }
@@ -345,7 +370,7 @@ router.delete('/spots/:spotId/release', async (req, res) => {
     const updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version },
       {
-        $set: { status: 'available', vehicle: null, softLock: null, reservedAt: null, reservedBy: null, occupiedAt: null },
+        $set: { status: 'available', mobileNumber: null, vehicle: null, softLock: null, reservedAt: null, reservedBy: null, occupiedAt: null },
         $inc: { version: 1 },
       },
       { new: true }
