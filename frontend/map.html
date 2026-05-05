@@ -389,83 +389,64 @@
     .spot-cell.moto .spot-id                     { color: var(--moto) !important; }
     .spot-cell.moto[data-status="available"]:hover { background: var(--moto-bg) !important; border-color: var(--moto) !important; }
 
-    /* Floor info bar — top center, floors 2 & 3 only */
-    .floor-info-bar {
+    /* ── Mall Entrance header row (mirrors grid flex to land label above C-D) ── */
+    .entrance-bar {
+      display: flex;
+      flex-shrink: 0;
+      height: 38px;
+      align-items: center;
+      padding: 0;
+    }
+    .eb-isle  { flex: 1; min-width: 0; }
+    .eb-aisle { width: 52px; flex-shrink: 0; }
+    .eb-entrance {
+      width: 52px;
+      flex-shrink: 0;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 5px 20px;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-faint);
-      flex-shrink: 0;
-      gap: 8px;
     }
-    .floor-info-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+    .eb-label {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
       font-size: 11px;
-      font-weight: 600;
-      color: var(--text-3);
-      background: var(--bg-input);
-      border: 1px solid var(--border-subtle);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--green);
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
       border-radius: var(--r-full);
-      padding: 3px 10px;
-    }
-    .entrance-tag {
-      font-size: 12px !important;
-      font-weight: 700 !important;
-      color: var(--green) !important;
-      background: var(--green-bg) !important;
-      border-color: var(--green-border) !important;
-      padding: 5px 18px !important;
-      letter-spacing: 0.2px;
+      padding: 4px 16px;
+      pointer-events: none;
+      z-index: 5;
     }
 
-    /* Corner wayfinding indicators */
-    .facility-wrap { position: relative; }
-    .corner-indicator {
-      position: absolute;
-      z-index: 20;
+    /* ── Wayfinding footer strip ── */
+    .wayfinding-footer {
+      height: 50px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      border-top: 1px solid var(--border-faint);
+    }
+    .wf-indicator {
       display: none;
       align-items: center;
-      gap: 6px;
-      font-size: 11px;
+      gap: 7px;
+      font-size: 13px;
       font-weight: 700;
-      padding: 5px 12px;
+      padding: 7px 18px;
       border-radius: var(--r-full);
-      pointer-events: none;
       letter-spacing: 0.2px;
     }
-    .corner-bl { bottom: 14px; left: 14px; }
-    .corner-br { bottom: 14px; right: 14px; }
-    .corner-exit { color: var(--red);    background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.35); }
-    .corner-ramp { color: var(--accent); background: var(--accent-dim);    border: 1px solid var(--accent-border); }
-
-    /* Mall Entrance aisle (between Island C and D, Floor 1) */
-    .entrance-aisle { width: 68px !important; background: rgba(34,197,94,0.04); }
-    .entrance-aisle-track {
-      flex: 1;
-      width: 2px;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(34,197,94,0.4) 0,
-        rgba(34,197,94,0.4) 6px,
-        transparent 6px,
-        transparent 14px
-      );
-    }
-    .entrance-aisle-label {
-      font-size: 6.5px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: var(--green);
-      writing-mode: vertical-rl;
-      text-align: center;
-      padding: 8px 0;
-      line-height: 2;
-    }
+    .wf-exit { color: #ffffff; background: rgba(239,68,68,0.75);  border: 1px solid rgba(239,68,68,0.5); }
+    .wf-ramp { color: #fde047; background: rgba(202,138,4,0.18);  border: 1px solid rgba(234,179,8,0.45); }
 
     /* Facility loader */
     .facility-loading {
@@ -756,21 +737,40 @@
         </div>
       </div>
 
-      <!-- Floor wayfinding bar (Mall Entrance, floors 2 & 3 only) -->
-      <div class="floor-info-bar" id="floor-info-bar" style="display:none;"></div>
-
-      <!-- Facility grid -->
+      <!-- Facility area: entrance header + grid + wayfinding footer -->
       <div class="facility-wrap">
-        <!-- Corner wayfinding indicators -->
-        <div id="indicator-bl" class="corner-indicator corner-bl"></div>
-        <div id="indicator-br" class="corner-indicator corner-br"></div>
 
+        <!-- Mall Entrance header — mirrors grid flex structure to pin label above C-D aisle -->
+        <div class="entrance-bar">
+          <div class="eb-isle"></div>
+          <div class="eb-aisle"></div>
+          <div class="eb-isle"></div>
+          <div class="eb-aisle"></div>
+          <div class="eb-isle"></div>
+          <div class="eb-entrance">
+            <span class="eb-label">🏬 Mall Entrance</span>
+          </div>
+          <div class="eb-isle"></div>
+          <div class="eb-aisle"></div>
+          <div class="eb-isle"></div>
+          <div class="eb-aisle"></div>
+          <div class="eb-isle"></div>
+        </div>
+
+        <!-- Parking grid (gets remaining space; ~10% shorter than before) -->
         <div class="facility-grid" id="facility-grid">
           <div class="facility-loading">
             <div class="spinner"></div>
             Loading facility from all shards…
           </div>
         </div>
+
+        <!-- Wayfinding footer — updated per floor, no overlap with spots -->
+        <div class="wayfinding-footer">
+          <div id="wf-left"  class="wf-indicator"></div>
+          <div id="wf-right" class="wf-indicator"></div>
+        </div>
+
       </div>
 
     </main>

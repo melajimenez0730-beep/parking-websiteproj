@@ -19,18 +19,15 @@ const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disab
 
 const FLOOR_LABELS = {
   1: {
-    topBar:      null,
-    bottomLeft:  { icon: '🅿 ↙', text: 'Parking Exit',    cls: 'exit' },
-    bottomRight: { icon: '⬆',   text: 'Way to 2nd Floor', cls: 'ramp' },
+    bottomLeft:  { icon: '🅿', text: 'Parking Exit ↙',   cls: 'exit' },
+    bottomRight: { icon: '⬆', text: 'Way to 2nd Floor',  cls: 'ramp' },
   },
   2: {
-    topBar:      { icon: '🏬', text: 'Mall Entrance' },
-    bottomLeft:  { icon: '⬇',  text: 'Way to 1st Floor', cls: 'ramp' },
-    bottomRight: { icon: '⬆',  text: 'Way to 3rd Floor', cls: 'ramp' },
+    bottomLeft:  { icon: '⬇', text: 'Way to 1st Floor',  cls: 'ramp' },
+    bottomRight: { icon: '⬆', text: 'Way to 3rd Floor',  cls: 'ramp' },
   },
   3: {
-    topBar:      { icon: '🏬', text: 'Mall Entrance' },
-    bottomLeft:  { icon: '⬇',  text: 'Way to 2nd Floor', cls: 'ramp' },
+    bottomLeft:  { icon: '⬇', text: 'Way to 2nd Floor',  cls: 'ramp' },
     bottomRight: null,
   },
 };
@@ -392,40 +389,27 @@ export function initMap(ParkingAPI, UserAPI, toast) {
   }
 
   function updateFloorInfoBar(floor) {
-    const bar = document.getElementById('floor-info-bar');
-    const bl  = document.getElementById('indicator-bl');
-    const br  = document.getElementById('indicator-br');
-    const meta = FLOOR_LABELS[floor] || {};
+    const wfLeft  = document.getElementById('wf-left');
+    const wfRight = document.getElementById('wf-right');
+    const meta    = FLOOR_LABELS[floor] || {};
 
-    // Top bar — hidden on Floor 1 (entrance is rendered in the grid)
-    if (bar) {
-      if (meta.topBar) {
-        bar.style.display = '';
-        bar.innerHTML = `<span class="floor-info-tag entrance-tag">${meta.topBar.icon} ${meta.topBar.text}</span>`;
-      } else {
-        bar.style.display = 'none';
-      }
-    }
-
-    // Bottom-left corner indicator
-    if (bl) {
+    if (wfLeft) {
       if (meta.bottomLeft) {
-        bl.style.display = 'flex';
-        bl.className = `corner-indicator corner-bl corner-${meta.bottomLeft.cls}`;
-        bl.innerHTML = `<span>${meta.bottomLeft.icon}</span><span>${meta.bottomLeft.text}</span>`;
+        wfLeft.style.display = 'flex';
+        wfLeft.className = `wf-indicator wf-${meta.bottomLeft.cls}`;
+        wfLeft.innerHTML = `<span>${meta.bottomLeft.icon}</span><span>${meta.bottomLeft.text}</span>`;
       } else {
-        bl.style.display = 'none';
+        wfLeft.style.display = 'none';
       }
     }
 
-    // Bottom-right corner indicator
-    if (br) {
+    if (wfRight) {
       if (meta.bottomRight) {
-        br.style.display = 'flex';
-        br.className = `corner-indicator corner-br corner-${meta.bottomRight.cls}`;
-        br.innerHTML = `<span>${meta.bottomRight.icon}</span><span>${meta.bottomRight.text}</span>`;
+        wfRight.style.display = 'flex';
+        wfRight.className = `wf-indicator wf-${meta.bottomRight.cls}`;
+        wfRight.innerHTML = `<span>${meta.bottomRight.icon}</span><span>${meta.bottomRight.text}</span>`;
       } else {
-        br.style.display = 'none';
+        wfRight.style.display = 'none';
       }
     }
   }
@@ -441,23 +425,13 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     ISLANDS_META.forEach((island, idx) => {
       html += renderIsland(island.label, island.colLeft, island.colRight, map);
       if (idx < ISLANDS_META.length - 1) {
-        if (currentFloor === 1 && idx === 2) {
-          html += `
-            <div class="main-aisle entrance-aisle">
-              <div class="entrance-aisle-track"></div>
-              <div class="entrance-aisle-label">🏬<br>MALL<br>ENTRANCE</div>
-              <div class="entrance-aisle-track"></div>
-            </div>
-          `;
-        } else {
-          html += `
-            <div class="main-aisle">
-              <div class="aisle-track"></div>
-              <div class="aisle-label">DRIVE</div>
-              <div class="aisle-track"></div>
-            </div>
-          `;
-        }
+        html += `
+          <div class="main-aisle">
+            <div class="aisle-track"></div>
+            <div class="aisle-label">DRIVE</div>
+            <div class="aisle-track"></div>
+          </div>
+        `;
       }
     });
 
