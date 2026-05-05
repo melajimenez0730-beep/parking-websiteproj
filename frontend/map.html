@@ -389,11 +389,11 @@
     .spot-cell.moto .spot-id                     { color: var(--moto) !important; }
     .spot-cell.moto[data-status="available"]:hover { background: var(--moto-bg) !important; border-color: var(--moto) !important; }
 
-    /* Floor info bar */
+    /* Floor info bar — top center, floors 2 & 3 only */
     .floor-info-bar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
       padding: 5px 20px;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-faint);
@@ -411,6 +411,60 @@
       border: 1px solid var(--border-subtle);
       border-radius: var(--r-full);
       padding: 3px 10px;
+    }
+    .entrance-tag {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      color: var(--green) !important;
+      background: var(--green-bg) !important;
+      border-color: var(--green-border) !important;
+      padding: 5px 18px !important;
+      letter-spacing: 0.2px;
+    }
+
+    /* Corner wayfinding indicators */
+    .facility-wrap { position: relative; }
+    .corner-indicator {
+      position: absolute;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: var(--r-full);
+      pointer-events: none;
+      letter-spacing: 0.2px;
+    }
+    .corner-bl { bottom: 14px; left: 14px; }
+    .corner-br { bottom: 14px; right: 14px; }
+    .corner-exit { color: var(--red);    background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.35); }
+    .corner-ramp { color: var(--accent); background: var(--accent-dim);    border: 1px solid var(--accent-border); }
+
+    /* Mall Entrance aisle (between Island C and D, Floor 1) */
+    .entrance-aisle { width: 68px !important; background: rgba(34,197,94,0.04); }
+    .entrance-aisle-track {
+      flex: 1;
+      width: 2px;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(34,197,94,0.4) 0,
+        rgba(34,197,94,0.4) 6px,
+        transparent 6px,
+        transparent 14px
+      );
+    }
+    .entrance-aisle-label {
+      font-size: 6.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--green);
+      writing-mode: vertical-rl;
+      text-align: center;
+      padding: 8px 0;
+      line-height: 2;
     }
 
     /* Facility loader */
@@ -702,15 +756,15 @@
         </div>
       </div>
 
-      <!-- Floor wayfinding bar -->
-      <div class="floor-info-bar" id="floor-info-bar">
-        <span class="floor-info-tag">🚶 Mall Entrance ↑</span>
-        <span class="floor-info-tag" style="color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim);">🅿 Floor 1</span>
-        <span class="floor-info-tag">➡ Parking Exit →</span>
-      </div>
+      <!-- Floor wayfinding bar (Mall Entrance, floors 2 & 3 only) -->
+      <div class="floor-info-bar" id="floor-info-bar" style="display:none;"></div>
 
       <!-- Facility grid -->
       <div class="facility-wrap">
+        <!-- Corner wayfinding indicators -->
+        <div id="indicator-bl" class="corner-indicator corner-bl"></div>
+        <div id="indicator-br" class="corner-indicator corner-br"></div>
+
         <div class="facility-grid" id="facility-grid">
           <div class="facility-loading">
             <div class="spinner"></div>

@@ -18,9 +18,21 @@ const STATUS_LABEL = {
 const FEATURE_ICONS = { entrance: '🚪', exit: '⬅️', grocery: '🛒', disability: '♿' };
 
 const FLOOR_LABELS = {
-  1: { left: 'Mall Entrance ↑', right: 'Parking Exit →' },
-  2: { left: 'Mall Entrance ↑', right: 'Way to Floor 3 ↑' },
-  3: { left: 'Mall Entrance ↑', right: 'Way to Floor 2 ↓' },
+  1: {
+    topBar:      null,
+    bottomLeft:  { icon: '🅿 ↙', text: 'Parking Exit',    cls: 'exit' },
+    bottomRight: { icon: '⬆',   text: 'Way to 2nd Floor', cls: 'ramp' },
+  },
+  2: {
+    topBar:      { icon: '🏬', text: 'Mall Entrance' },
+    bottomLeft:  { icon: '⬇',  text: 'Way to 1st Floor', cls: 'ramp' },
+    bottomRight: { icon: '⬆',  text: 'Way to 3rd Floor', cls: 'ramp' },
+  },
+  3: {
+    topBar:      { icon: '🏬', text: 'Mall Entrance' },
+    bottomLeft:  { icon: '⬇',  text: 'Way to 2nd Floor', cls: 'ramp' },
+    bottomRight: null,
+  },
 };
 
 const VALID_OTPS = ['123456', '888888', '000000'];
@@ -381,13 +393,41 @@ export function initMap(ParkingAPI, UserAPI, toast) {
 
   function updateFloorInfoBar(floor) {
     const bar = document.getElementById('floor-info-bar');
-    if (!bar) return;
-    const labels = FLOOR_LABELS[floor] || {};
-    bar.innerHTML = `
-      <span class="floor-info-tag">🚶 ${labels.left || ''}</span>
-      <span class="floor-info-tag" style="color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim);">🅿 Floor ${floor}</span>
-      <span class="floor-info-tag">➡ ${labels.right || ''}</span>
-    `;
+    const bl  = document.getElementById('indicator-bl');
+    const br  = document.getElementById('indicator-br');
+    const meta = FLOOR_LABELS[floor] || {};
+
+    // Top bar — hidden on Floor 1 (entrance is rendered in the grid)
+    if (bar) {
+      if (meta.topBar) {
+        bar.style.display = '';
+        bar.innerHTML = `<span class="floor-info-tag entrance-tag">${meta.topBar.icon} ${meta.topBar.text}</span>`;
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+
+    // Bottom-left corner indicator
+    if (bl) {
+      if (meta.bottomLeft) {
+        bl.style.display = 'flex';
+        bl.className = `corner-indicator corner-bl corner-${meta.bottomLeft.cls}`;
+        bl.innerHTML = `<span>${meta.bottomLeft.icon}</span><span>${meta.bottomLeft.text}</span>`;
+      } else {
+        bl.style.display = 'none';
+      }
+    }
+
+    // Bottom-right corner indicator
+    if (br) {
+      if (meta.bottomRight) {
+        br.style.display = 'flex';
+        br.className = `corner-indicator corner-br corner-${meta.bottomRight.cls}`;
+        br.innerHTML = `<span>${meta.bottomRight.icon}</span><span>${meta.bottomRight.text}</span>`;
+      } else {
+        br.style.display = 'none';
+      }
+    }
   }
 
   function renderGrid() {
@@ -401,13 +441,23 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     ISLANDS_META.forEach((island, idx) => {
       html += renderIsland(island.label, island.colLeft, island.colRight, map);
       if (idx < ISLANDS_META.length - 1) {
-        html += `
-          <div class="main-aisle">
-            <div class="aisle-track"></div>
-            <div class="aisle-label">DRIVE</div>
-            <div class="aisle-track"></div>
-          </div>
-        `;
+        if (currentFloor === 1 && idx === 2) {
+          html += `
+            <div class="main-aisle entrance-aisle">
+              <div class="entrance-aisle-track"></div>
+              <div class="entrance-aisle-label">🏬<br>MALL<br>ENTRANCE</div>
+              <div class="entrance-aisle-track"></div>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="main-aisle">
+              <div class="aisle-track"></div>
+              <div class="aisle-label">DRIVE</div>
+              <div class="aisle-track"></div>
+            </div>
+          `;
+        }
       }
     });
 
