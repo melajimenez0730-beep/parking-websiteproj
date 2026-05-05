@@ -449,7 +449,22 @@ export function initMap(ParkingAPI, UserAPI, toast) {
         else { clearInterval(tooltipTimer); tooltipTimer = null; }
       }, 1000);
     } else if (spot.status === 'reserved') {
-      statusHtml = `<div style="color:var(--amber);font-weight:700;font-size:12px;">✓ RESERVED</div><div style="color:var(--text-3);font-size:11px;margin-top:3px;">Confirmed reservation</div>`;
+      const reservedAt = spot.reservedAt ? new Date(spot.reservedAt) : null;
+      const elapsed = () => {
+        if (!reservedAt) return '--:--';
+        const s = Math.round((Date.now() - reservedAt) / 1000);
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      };
+      statusHtml = `
+        <div style="color:var(--amber);font-weight:700;font-size:12px;">✓ RESERVED</div>
+        <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Held for <span id="tt-countdown" style="font-family:var(--font-mono);color:var(--amber);">${elapsed()}</span></div>
+      `;
+      if (tooltipTimer) clearInterval(tooltipTimer);
+      tooltipTimer = setInterval(() => {
+        const cd = document.getElementById('tt-countdown');
+        if (cd) cd.textContent = elapsed();
+        else { clearInterval(tooltipTimer); tooltipTimer = null; }
+      }, 1000);
     } else if (spot.status === 'occupied') {
       statusHtml = `<div style="color:var(--red);font-weight:700;font-size:12px;">● OCCUPIED</div><div style="color:var(--text-3);font-size:11px;margin-top:3px;">Currently in use</div>`;
     }
