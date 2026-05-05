@@ -122,4 +122,39 @@ router.post('/strike', async (req, res) => {
   }
 });
 
+// POST /api/user/token-login
+// Validates demo OTP and creates/returns a persistent session token.
+// Frontend stores this token so returning users skip the OTP step entirely.
+const DEMO_OTPS = ['123456', '888888', '000000'];
+
+router.post('/token-login', async (req, res) => {
+  const { mobileNumber, otpCode } = req.body || {};
+  if (!mobileNumber) return res.status(400).json({ error: 'mobileNumber is required' });
+  if (!DEMO_OTPS.includes(String(otpCode))) {
+    return res.status(401).json({ error: 'Invalid OTP.' });
+  }
+
+  try {
+    let user = await User.findOne({ mobileNumber });
+
+    if (user && isLocked(user)) {
+      return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
+    }
+
+    const sessionToken = uuid();
+    if (user) {
+      user.verified     = true;
+      user.sessionToken = sessionToken;
+      await user.save();
+    } else {
+      user = await User.create({ mobileNumber, verified: true, sessionToken });
+    }
+
+    res.json({ token: sessionToken, mobileNumber, strikes: user.strikes });
+  } catch (err) {
+    console.error('[user/token-login]', err);
+    res.status(500).json({ error: 'Login failed.' });
+  }
+});
+
 module.exports = router;

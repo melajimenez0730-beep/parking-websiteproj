@@ -536,8 +536,14 @@
         <!-- Features -->
         <div class="modal-features" id="m-features" style="margin-bottom:16px;min-height:20px;"></div>
 
-        <!-- Mobile input -->
-        <div style="margin-bottom:20px;">
+        <!-- Session info (shown when user is already logged in) -->
+        <div id="m-session-info" style="display:none;margin-bottom:16px;padding:10px 13px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r-sm);align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:12px;color:var(--green);font-weight:600;">✓ Signed in as <span id="m-session-mobile" style="font-family:var(--font-mono);">—</span></span>
+          <button id="m-logout-btn" style="font-size:11px;color:var(--text-4);background:none;border:1px solid var(--border-subtle);border-radius:var(--r-full);cursor:pointer;padding:2px 9px;font-family:var(--font);transition:all 0.15s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border-subtle)';this.style.color='var(--text-4)'">Log out</button>
+        </div>
+
+        <!-- Mobile input (shown for first-time / logged-out users) -->
+        <div id="m-mobile-wrap" style="margin-bottom:20px;">
           <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Mobile Number</label>
           <input id="m-mobile-input" type="tel" placeholder="09XXXXXXXXX  (11 digits)"
             style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:15px;font-family:var(--font-mono);outline:none;transition:border-color 0.15s;"
@@ -700,13 +706,13 @@
   </div>
 
   <script type="module">
-    import { ParkingAPI, toast, initTheme } from './js/api.js';
+    import { ParkingAPI, UserAPI, toast, initTheme } from './js/api.js';
     import { initMap } from './js/map.js';
     initTheme();
     if (sessionStorage.getItem('reservation') || localStorage.getItem('ps_last_reservation')) {
       document.getElementById('my-res-link').style.display = 'inline-flex';
     }
-    initMap(ParkingAPI, toast);
+    initMap(ParkingAPI, UserAPI, toast);
   </script>
 </body>
 </html>

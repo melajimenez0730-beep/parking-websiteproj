@@ -51,11 +51,8 @@ export const ParkingAPI = {
 };
 
 export const UserAPI = {
-  register: (mobileNumber) =>
-    request('POST', '/user/register', { mobileNumber }),
-
-  verifyOtp: (mobileNumber, otpCode) =>
-    request('POST', '/user/verify-otp', { mobileNumber, otpCode }),
+  tokenLogin: (mobileNumber, otpCode) =>
+    request('POST', '/user/token-login', { mobileNumber, otpCode }),
 
   status: (mobile) =>
     request('GET', `/user/status?mobile=${encodeURIComponent(mobile)}`),

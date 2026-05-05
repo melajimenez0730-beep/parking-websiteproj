@@ -25,11 +25,33 @@ const FLOOR_LABELS = {
 
 const VALID_OTPS = ['123456', '888888', '000000'];
 
-export function initMap(ParkingAPI, toast) {
+// ── Session helpers ────────────────────────────────────────────────────────
+function getSession() {
+  const mobile = localStorage.getItem('user_mobile');
+  const token  = localStorage.getItem('user_token');
+  return mobile && token ? { mobile, token } : null;
+}
+
+function saveSession(mobile, token) {
+  localStorage.setItem('user_mobile', mobile);
+  localStorage.setItem('user_token',  token);
+}
+
+function clearSession() {
+  localStorage.removeItem('user_mobile');
+  localStorage.removeItem('user_token');
+}
+
+function maskMobile(mobile) {
+  if (mobile.length < 8) return mobile;
+  return mobile.slice(0, 4) + 'XXXX' + mobile.slice(8);
+}
+
+export function initMap(ParkingAPI, UserAPI, toast) {
   let currentSpots    = [];
   let allFloorMeta    = { 1: null, 2: null, 3: null };
   let selectedSpot    = null;
-  let selectedAction  = 'reserve'; // 'reserve' | 'park_now'
+  let selectedAction  = 'reserve';
   let currentFloor    = 1;
   let currentCriteria = 'entrance';
 
@@ -45,6 +67,10 @@ export function initMap(ParkingAPI, toast) {
   const mFloor              = document.getElementById('m-floor');
   const mPos                = document.getElementById('m-pos');
   const mFeatures           = document.getElementById('m-features');
+  const mSessionInfo        = document.getElementById('m-session-info');
+  const mSessionMobile      = document.getElementById('m-session-mobile');
+  const mLogoutBtn          = document.getElementById('m-logout-btn');
+  const mMobileWrap         = document.getElementById('m-mobile-wrap');
   const mMobileInput        = document.getElementById('m-mobile-input');
   const mCancelBtn          = document.getElementById('m-cancel-btn');
   const mConfirmBtn         = document.getElementById('m-confirm-btn');
@@ -68,7 +94,16 @@ export function initMap(ParkingAPI, toast) {
     actionToggleReserve.classList.remove('active');
   });
 
-  // ── Modal open / close ───────────────────────────────────────────────
+  // ── Logout ───────────────────────────────────────────────────────────
+  mLogoutBtn.addEventListener('click', () => {
+    clearSession();
+    mSessionInfo.style.display = 'none';
+    mMobileWrap.style.display  = '';
+    mMobileInput.value = '';
+    setTimeout(() => mMobileInput.focus(), 60);
+  });
+
+  // ── Open / close modal ───────────────────────────────────────────────
   function openActionModal(spot) {
     const pad = String(spot.spotNum).padStart(3, '0');
     mBadge.textContent  = `P${pad}`;
@@ -80,7 +115,6 @@ export function initMap(ParkingAPI, toast) {
       `<span class="pill pill-default" style="font-size:11px;">${FEATURE_ICONS[f] || ''} ${f}</span>`
     ).join('') || '<span style="font-size:12px;color:var(--text-4);">No special features</span>';
 
-    // Reset to step 1 defaults
     selectedAction = 'reserve';
     actionToggleReserve.classList.add('active');
     actionToggleParkNow.classList.remove('active');
@@ -89,12 +123,23 @@ export function initMap(ParkingAPI, toast) {
     mConfirmBtn.disabled    = false;
     mConfirmBtn.textContent = 'Confirm →';
 
+    // Show session if user is already logged in, otherwise show mobile input
+    const session = getSession();
+    if (session) {
+      mSessionMobile.textContent = maskMobile(session.mobile);
+      mSessionInfo.style.display = 'flex';
+      mMobileWrap.style.display  = 'none';
+    } else {
+      mSessionInfo.style.display = 'none';
+      mMobileWrap.style.display  = '';
+    }
+
     actionStep1.style.display = '';
     actionStep2.style.display = 'none';
 
     actionModal.classList.add('open');
     document.body.style.overflow = 'hidden';
-    setTimeout(() => mMobileInput.focus(), 60);
+    if (!session) setTimeout(() => mMobileInput.focus(), 60);
   }
 
   function closeActionModal() {
@@ -108,46 +153,79 @@ export function initMap(ParkingAPI, toast) {
 
   // ── Step 1: Confirm ──────────────────────────────────────────────────
   mConfirmBtn.addEventListener('click', async () => {
-    const mobile = mMobileInput.value.trim().replace(/[\s\-]/g, '');
+    const session = getSession();
 
-    if (!/^\d{11}$/.test(mobile)) {
-      toast('Enter a valid 11-digit mobile number (e.g. 09XXXXXXXXX).', 'error');
-      mMobileInput.focus();
-      return;
-    }
+    if (session) {
+      // ── Returning user: token already in localStorage → skip OTP ──
+      mConfirmBtn.disabled    = true;
+      mConfirmBtn.textContent = 'Checking…';
 
-    mConfirmBtn.disabled    = true;
-    mConfirmBtn.textContent = 'Checking…';
+      try {
+        const check = await ParkingAPI.checkMobile(session.mobile);
 
-    try {
-      const check = await ParkingAPI.checkMobile(mobile);
+        if (check.locked) {
+          const until = new Date(check.lockoutUntil).toLocaleString();
+          toast(`Account locked until ${until}. (${check.strikes}/3 strikes)`, 'error');
+          clearSession();
+          closeActionModal();
+          return;
+        }
+        if (check.hasActiveSession) {
+          toast('You already have an active parking session.', 'error');
+          return;
+        }
 
-      if (check.locked) {
-        const until = new Date(check.lockoutUntil).toLocaleString();
-        toast(`Number locked until ${until}. (${check.strikes}/3 strikes recorded)`, 'error');
+        mConfirmBtn.textContent = 'Processing…';
+        await executeAction(selectedSpot, session.mobile);
+
+      } catch (err) {
+        toast(err.message || 'Action failed. Please try again.', 'error');
+      } finally {
+        mConfirmBtn.disabled    = false;
+        mConfirmBtn.textContent = 'Confirm →';
+      }
+
+    } else {
+      // ── New user: validate mobile, check, go to OTP ──
+      const mobile = mMobileInput.value.trim().replace(/[\s\-]/g, '');
+
+      if (!/^\d{11}$/.test(mobile)) {
+        toast('Enter a valid 11-digit mobile number (e.g. 09XXXXXXXXX).', 'error');
+        mMobileInput.focus();
         return;
       }
 
-      if (check.hasActiveSession) {
-        toast('This number already has an active parking session. Use a different number.', 'error');
-        return;
+      mConfirmBtn.disabled    = true;
+      mConfirmBtn.textContent = 'Checking…';
+
+      try {
+        const check = await ParkingAPI.checkMobile(mobile);
+
+        if (check.locked) {
+          const until = new Date(check.lockoutUntil).toLocaleString();
+          toast(`Number locked until ${until}. (${check.strikes}/3 strikes)`, 'error');
+          return;
+        }
+        if (check.hasActiveSession) {
+          toast('This number already has an active parking session.', 'error');
+          return;
+        }
+
+        const masked = mobile.slice(0, 4) + 'XXXX' + mobile.slice(8);
+        mOtpSub.textContent       = `Enter the 6-digit code sent to ${masked}`;
+        mOtpInput.value           = '';
+        mOtpVerifyBtn.disabled    = false;
+        mOtpVerifyBtn.textContent = 'Verify & Confirm';
+        actionStep1.style.display = 'none';
+        actionStep2.style.display = '';
+        setTimeout(() => mOtpInput.focus(), 60);
+
+      } catch (err) {
+        toast(err.message || 'Failed to validate. Please try again.', 'error');
+      } finally {
+        mConfirmBtn.disabled    = false;
+        mConfirmBtn.textContent = 'Confirm →';
       }
-
-      // Proceed to OTP
-      const masked = mobile.slice(0, 4) + 'XXXX' + mobile.slice(8);
-      mOtpSub.textContent = `Enter the 6-digit code sent to ${masked}`;
-      mOtpInput.value = '';
-      mOtpVerifyBtn.disabled    = false;
-      mOtpVerifyBtn.textContent = 'Verify & Confirm';
-      actionStep1.style.display = 'none';
-      actionStep2.style.display = '';
-      setTimeout(() => mOtpInput.focus(), 60);
-
-    } catch (err) {
-      toast(err.message || 'Failed to validate. Please try again.', 'error');
-    } finally {
-      mConfirmBtn.disabled    = false;
-      mConfirmBtn.textContent = 'Confirm →';
     }
   });
 
@@ -158,7 +236,7 @@ export function initMap(ParkingAPI, toast) {
     setTimeout(() => mMobileInput.focus(), 60);
   });
 
-  // ── Step 2: Verify OTP & execute action ──────────────────────────────
+  // ── Step 2: Verify OTP → issue token → execute action ────────────────
   mOtpVerifyBtn.addEventListener('click', async () => {
     const otp    = mOtpInput.value.trim();
     const mobile = mMobileInput.value.trim().replace(/[\s\-]/g, '');
@@ -170,39 +248,55 @@ export function initMap(ParkingAPI, toast) {
     }
 
     mOtpVerifyBtn.disabled    = true;
+    mOtpVerifyBtn.textContent = 'Verifying…';
+
+    // Issue a session token from the backend so this user is remembered
+    try {
+      const result = await UserAPI.tokenLogin(mobile, otp);
+      saveSession(result.mobileNumber, result.token);
+    } catch (err) {
+      console.warn('[token-login] non-fatal:', err.message);
+      // Still proceed with action even if token storage fails
+    }
+
     mOtpVerifyBtn.textContent = 'Processing…';
 
     try {
-      if (selectedAction === 'park_now') {
-        const result = await ParkingAPI.parkNow(selectedSpot.spotId, mobile, {});
-        toast(`Parked at P${String(selectedSpot.spotNum).padStart(3, '0')}! Txn: ${result.transactionId}`, 'success', 5000);
-        closeActionModal();
-        loadFloor(currentFloor);
-      } else {
-        const userId = 'user_' + Date.now();
-        const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {}, mobile);
-
-        sessionStorage.setItem('reservation', JSON.stringify({
-          spotId:       selectedSpot.spotId,
-          spotNum:      selectedSpot.spotNum,
-          floor:        selectedSpot.floor_number,
-          row:          selectedSpot.row,
-          col:          selectedSpot.col,
-          features:     selectedSpot.features,
-          lockId:       result.lockId,
-          expiresAt:    result.expiresAt,
-          userId,
-          mobileNumber: mobile,
-        }));
-
-        window.location.href = 'confirm.html';
-      }
+      await executeAction(selectedSpot, mobile);
     } catch (err) {
       toast(err.message || 'Action failed. Please try again.', 'error');
       mOtpVerifyBtn.disabled    = false;
       mOtpVerifyBtn.textContent = 'Verify & Confirm';
     }
   });
+
+  // ── Execute the chosen parking action ────────────────────────────────
+  async function executeAction(spot, mobile) {
+    if (selectedAction === 'park_now') {
+      const result = await ParkingAPI.parkNow(spot.spotId, mobile, {});
+      toast(`Parked at P${String(spot.spotNum).padStart(3, '0')}! Txn: ${result.transactionId}`, 'success', 5000);
+      closeActionModal();
+      loadFloor(currentFloor);
+    } else {
+      const userId = 'user_' + Date.now();
+      const result = await ParkingAPI.softLock(spot.spotId, userId, {}, mobile);
+
+      sessionStorage.setItem('reservation', JSON.stringify({
+        spotId:       spot.spotId,
+        spotNum:      spot.spotNum,
+        floor:        spot.floor_number,
+        row:          spot.row,
+        col:          spot.col,
+        features:     spot.features,
+        lockId:       result.lockId,
+        expiresAt:    result.expiresAt,
+        userId,
+        mobileNumber: mobile,
+      }));
+
+      window.location.href = 'confirm.html';
+    }
+  }
 
   // ── Event wiring ─────────────────────────────────────────────────────
   document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentFloor, true));
