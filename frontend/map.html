@@ -475,83 +475,100 @@
     .modal-info-cell-value { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-mono); }
     .modal-features { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
     .modal-actions  { display: flex; gap: 10px; }
+
+    /* Action toggle buttons */
+    .action-toggle {
+      flex: 1;
+      padding: 10px 6px;
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-default);
+      background: var(--bg-input);
+      color: var(--text-3);
+      font-family: var(--font);
+      transition: all 0.15s;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .action-toggle:hover  { background: var(--bg-card); color: var(--text-2); }
+    .action-toggle.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); font-weight: 700; }
   </style>
 </head>
 <body>
 
-  <!-- ── Auth Modal ── -->
-  <div class="reserve-modal-backdrop" id="auth-modal">
+  <!-- ── Action Tab Modal ── -->
+  <div class="reserve-modal-backdrop" id="action-modal">
     <div class="reserve-modal">
-      <!-- Step 1: Mobile -->
-      <div id="auth-mobile-step">
-        <div class="modal-spot-badge" style="background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);font-size:24px;">🔐</div>
-        <div class="modal-title">Verify Your Mobile</div>
-        <div class="modal-sub">Enter your mobile number to receive a one-time code.</div>
-        <div style="margin-bottom:16px;">
-          <label style="font-size:11px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">Mobile Number</label>
-          <input id="auth-mobile-input" type="tel" placeholder="+63 9XX XXX XXXX"
-            style="width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font-mono);outline:none;" />
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-ghost" style="min-width:90px;" id="auth-cancel-btn">Cancel</button>
-          <button class="btn btn-primary btn-full" id="auth-send-btn">Send OTP</button>
-        </div>
-      </div>
-      <!-- Step 2: OTP -->
-      <div id="auth-otp-step" style="display:none;">
-        <div class="modal-spot-badge" style="background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);font-size:24px;">📱</div>
-        <div class="modal-title">Enter OTP</div>
-        <div class="modal-sub">Enter the 6-digit code sent to your mobile number.</div>
-        <div style="margin-bottom:16px;">
-          <label style="font-size:11px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;">One-Time Code</label>
-          <input id="auth-otp-input" type="text" placeholder="000000" maxlength="6"
-            style="width:100%;box-sizing:border-box;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:24px;font-family:var(--font-mono);letter-spacing:8px;text-align:center;outline:none;" />
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-ghost" style="min-width:90px;" id="auth-back-btn">← Back</button>
-          <button class="btn btn-primary btn-full" id="auth-verify-btn">Verify OTP</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ── Reserve Modal ── -->
-  <div class="reserve-modal-backdrop" id="reserve-modal">
-    <div class="reserve-modal">
-      <div class="modal-spot-badge" id="m-badge">P--</div>
-      <div class="modal-title" id="m-title">Spot P--</div>
-      <div class="modal-sub"   id="m-sub">Floor — · Row — · Col —</div>
-      <div class="modal-info-grid">
-        <div class="modal-info-cell">
-          <div class="modal-info-cell-label">Floor</div>
-          <div class="modal-info-cell-value" id="m-floor">—</div>
+      <!-- Step 1: Action choice + mobile number -->
+      <div id="action-step-1">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+          <div class="modal-spot-badge" id="m-badge" style="margin-bottom:0;flex-shrink:0;">P--</div>
+          <div>
+            <div class="modal-title" id="m-title" style="margin-bottom:2px;">Spot P--</div>
+            <div class="modal-sub"   id="m-sub"   style="margin-bottom:0;">Floor — · Row — · Col —</div>
+          </div>
         </div>
-        <div class="modal-info-cell">
-          <div class="modal-info-cell-label">Shard</div>
-          <div class="modal-info-cell-value" id="m-shard">—</div>
+
+        <!-- Action toggle -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;margin-bottom:8px;">Choose Action</div>
+          <div style="display:flex;gap:8px;">
+            <button id="action-toggle-reserve" class="action-toggle active">🔒 Reserve<br><span style="font-size:10px;font-weight:500;opacity:0.75;">3-min hold</span></button>
+            <button id="action-toggle-parknow" class="action-toggle">🚗 Park Now<br><span style="font-size:10px;font-weight:500;opacity:0.75;">immediate</span></button>
+          </div>
         </div>
-        <div class="modal-info-cell">
-          <div class="modal-info-cell-label">Position</div>
-          <div class="modal-info-cell-value" id="m-pos">—</div>
+
+        <!-- Spot info cells -->
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <div class="modal-info-cell" style="flex:1;">
+            <div class="modal-info-cell-label">Floor</div>
+            <div class="modal-info-cell-value" id="m-floor">—</div>
+          </div>
+          <div class="modal-info-cell" style="flex:1;">
+            <div class="modal-info-cell-label">Position</div>
+            <div class="modal-info-cell-value" id="m-pos">—</div>
+          </div>
         </div>
-        <div class="modal-info-cell">
-          <div class="modal-info-cell-label">Status</div>
-          <div class="modal-info-cell-value" style="color:var(--green);" id="m-status">Available</div>
+
+        <!-- Features -->
+        <div class="modal-features" id="m-features" style="margin-bottom:16px;min-height:20px;"></div>
+
+        <!-- Mobile input -->
+        <div style="margin-bottom:20px;">
+          <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Mobile Number</label>
+          <input id="m-mobile-input" type="tel" placeholder="09XXXXXXXXX  (11 digits)"
+            style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:15px;font-family:var(--font-mono);outline:none;transition:border-color 0.15s;"
+            onfocus="this.style.borderColor='var(--accent)'"
+            onblur="this.style.borderColor='var(--border-default)'" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" style="min-width:90px;" id="m-cancel-btn">Cancel</button>
+          <button class="btn btn-primary btn-full" id="m-confirm-btn">Confirm →</button>
         </div>
       </div>
-      <div class="modal-features" id="m-features"></div>
-      <div class="modal-actions" style="flex-direction:column;gap:8px;">
-        <div style="display:flex;gap:10px;">
-          <button class="btn btn-ghost" style="min-width:80px;" id="m-cancel-btn">Cancel</button>
-          <button class="btn btn-primary btn-full" id="m-reserve-btn">🔒 Reserve (3-min hold)</button>
+
+      <!-- Step 2: OTP verification -->
+      <div id="action-step-2" style="display:none;text-align:center;">
+        <div class="modal-spot-badge" style="font-size:26px;margin:0 auto 20px;background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);">📱</div>
+        <div class="modal-title" style="margin-bottom:4px;">OTP Verification</div>
+        <div class="modal-sub" id="m-otp-sub" style="margin-bottom:20px;">Enter the code sent to your mobile</div>
+        <input id="m-otp-input" type="text" placeholder="000000" maxlength="6"
+          style="width:100%;box-sizing:border-box;padding:14px 12px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:30px;font-family:var(--font-mono);letter-spacing:10px;text-align:center;outline:none;transition:border-color 0.15s;margin-bottom:8px;"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border-default)'" />
+        <div style="font-size:11px;color:var(--text-4);margin-bottom:24px;">
+          Demo codes: <span style="font-family:var(--font-mono);color:var(--accent);">123456</span> · <span style="font-family:var(--font-mono);color:var(--accent);">888888</span> · <span style="font-family:var(--font-mono);color:var(--accent);">000000</span>
         </div>
-        <button id="m-park-now-btn"
-          style="width:100%;padding:11px;border-radius:var(--r-sm);background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);color:var(--green);font-weight:700;font-size:14px;cursor:pointer;font-family:var(--font);transition:all 0.15s;"
-          onmouseover="this.style.background='rgba(34,197,94,0.22)'"
-          onmouseout="this.style.background='rgba(34,197,94,0.12)'">
-          🚗 Park Now — Immediate
-        </button>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" style="min-width:90px;" id="m-otp-back-btn">← Back</button>
+          <button class="btn btn-primary btn-full" id="m-otp-verify-btn">Verify & Confirm</button>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -683,13 +700,13 @@
   </div>
 
   <script type="module">
-    import { ParkingAPI, UserAPI, toast, initTheme } from './js/api.js';
+    import { ParkingAPI, toast, initTheme } from './js/api.js';
     import { initMap } from './js/map.js';
     initTheme();
     if (sessionStorage.getItem('reservation') || localStorage.getItem('ps_last_reservation')) {
       document.getElementById('my-res-link').style.display = 'inline-flex';
     }
-    initMap(ParkingAPI, UserAPI, toast);
+    initMap(ParkingAPI, toast);
   </script>
 </body>
 </html>

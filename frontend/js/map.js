@@ -23,194 +23,188 @@ const FLOOR_LABELS = {
   3: { left: 'Mall Entrance ↑', right: 'Way to Floor 2 ↓' },
 };
 
-export function initMap(ParkingAPI, UserAPI, toast) {
+const VALID_OTPS = ['123456', '888888', '000000'];
+
+export function initMap(ParkingAPI, toast) {
   let currentSpots    = [];
   let allFloorMeta    = { 1: null, 2: null, 3: null };
   let selectedSpot    = null;
+  let selectedAction  = 'reserve'; // 'reserve' | 'park_now'
   let currentFloor    = 1;
   let currentCriteria = 'entrance';
 
-  const facilityGrid  = document.getElementById('facility-grid');
-  const modalBackdrop = document.getElementById('reserve-modal');
-  const mBadge        = document.getElementById('m-badge');
-  const mTitle        = document.getElementById('m-title');
-  const mSub          = document.getElementById('m-sub');
-  const mFloor        = document.getElementById('m-floor');
-  const mShard        = document.getElementById('m-shard');
-  const mPos          = document.getElementById('m-pos');
-  const mStatus       = document.getElementById('m-status');
-  const mFeatures     = document.getElementById('m-features');
-  const mReserveBtn   = document.getElementById('m-reserve-btn');
-  const mParkNowBtn   = document.getElementById('m-park-now-btn');
-  const mCancelBtn    = document.getElementById('m-cancel-btn');
+  const facilityGrid = document.getElementById('facility-grid');
 
-  const authModal       = document.getElementById('auth-modal');
-  const authMobileStep  = document.getElementById('auth-mobile-step');
-  const authOtpStep     = document.getElementById('auth-otp-step');
-  const authMobileInput = document.getElementById('auth-mobile-input');
-  const authOtpInput    = document.getElementById('auth-otp-input');
-  const authSendBtn     = document.getElementById('auth-send-btn');
-  const authVerifyBtn   = document.getElementById('auth-verify-btn');
-  const authCancelBtn   = document.getElementById('auth-cancel-btn');
-  const authBackBtn     = document.getElementById('auth-back-btn');
+  // ── Action Modal DOM refs ────────────────────────────────────────────
+  const actionModal         = document.getElementById('action-modal');
+  const actionStep1         = document.getElementById('action-step-1');
+  const actionStep2         = document.getElementById('action-step-2');
+  const mBadge              = document.getElementById('m-badge');
+  const mTitle              = document.getElementById('m-title');
+  const mSub                = document.getElementById('m-sub');
+  const mFloor              = document.getElementById('m-floor');
+  const mPos                = document.getElementById('m-pos');
+  const mFeatures           = document.getElementById('m-features');
+  const mMobileInput        = document.getElementById('m-mobile-input');
+  const mCancelBtn          = document.getElementById('m-cancel-btn');
+  const mConfirmBtn         = document.getElementById('m-confirm-btn');
+  const actionToggleReserve = document.getElementById('action-toggle-reserve');
+  const actionToggleParkNow = document.getElementById('action-toggle-parknow');
+  const mOtpInput           = document.getElementById('m-otp-input');
+  const mOtpSub             = document.getElementById('m-otp-sub');
+  const mOtpBackBtn         = document.getElementById('m-otp-back-btn');
+  const mOtpVerifyBtn       = document.getElementById('m-otp-verify-btn');
 
-  function getUser() {
-    const mobile = localStorage.getItem('user_mobile');
-    const token  = localStorage.getItem('user_token');
-    return mobile && token ? { mobile, token } : null;
-  }
-
-  // ── Auth Modal ────────────────────────────────────────────────────────
-  function openAuthModal() {
-    authMobileStep.style.display = '';
-    authOtpStep.style.display    = 'none';
-    authMobileInput.value = '';
-    authOtpInput.value    = '';
-    authModal.classList.add('open');
-    setTimeout(() => authMobileInput.focus(), 60);
-  }
-
-  function closeAuthModal() {
-    authModal.classList.remove('open');
-  }
-
-  authCancelBtn.addEventListener('click', () => { closeAuthModal(); selectedSpot = null; });
-  authModal.addEventListener('click', e => { if (e.target === authModal) { closeAuthModal(); selectedSpot = null; } });
-
-  authBackBtn.addEventListener('click', () => {
-    authOtpStep.style.display    = 'none';
-    authMobileStep.style.display = '';
-    setTimeout(() => authMobileInput.focus(), 60);
+  // ── Action toggle ────────────────────────────────────────────────────
+  actionToggleReserve.addEventListener('click', () => {
+    selectedAction = 'reserve';
+    actionToggleReserve.classList.add('active');
+    actionToggleParkNow.classList.remove('active');
   });
 
-  authSendBtn.addEventListener('click', async () => {
-    const mobile = authMobileInput.value.trim();
-    if (!mobile) { toast('Enter your mobile number.', 'error'); return; }
-    authSendBtn.disabled    = true;
-    authSendBtn.textContent = 'Sending…';
-    try {
-      const result = await UserAPI.register(mobile);
-      toast(`OTP sent! (Dev code: ${result.otpCode})`, 'info', 8000);
-      authMobileStep.style.display = 'none';
-      authOtpStep.style.display    = '';
-      setTimeout(() => authOtpInput.focus(), 60);
-    } catch (err) {
-      toast(err.message || 'Failed to send OTP.', 'error');
-    } finally {
-      authSendBtn.disabled    = false;
-      authSendBtn.textContent = 'Send OTP';
-    }
+  actionToggleParkNow.addEventListener('click', () => {
+    selectedAction = 'park_now';
+    actionToggleParkNow.classList.add('active');
+    actionToggleReserve.classList.remove('active');
   });
 
-  authVerifyBtn.addEventListener('click', async () => {
-    const mobile = authMobileInput.value.trim();
-    const otp    = authOtpInput.value.trim();
-    if (!otp) { toast('Enter your OTP.', 'error'); return; }
-    authVerifyBtn.disabled    = true;
-    authVerifyBtn.textContent = 'Verifying…';
-    try {
-      const result = await UserAPI.verifyOtp(mobile, otp);
-      localStorage.setItem('user_mobile', result.mobileNumber);
-      localStorage.setItem('user_token',  result.token);
-      closeAuthModal();
-      toast('Verified! Choose your parking option.', 'success');
-      if (selectedSpot) openChoiceModal(selectedSpot);
-    } catch (err) {
-      toast(err.message || 'Invalid OTP.', 'error');
-    } finally {
-      authVerifyBtn.disabled    = false;
-      authVerifyBtn.textContent = 'Verify OTP';
-    }
-  });
-
-  // ── Choice Modal ──────────────────────────────────────────────────────
-  mCancelBtn.addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
-
-  function openChoiceModal(spot) {
+  // ── Modal open / close ───────────────────────────────────────────────
+  function openActionModal(spot) {
     const pad = String(spot.spotNum).padStart(3, '0');
     mBadge.textContent  = `P${pad}`;
     mTitle.textContent  = `Spot P${pad}`;
     mSub.textContent    = `Floor ${spot.floor_number} · Row ${spot.row} · Col ${spot.col}`;
     mFloor.textContent  = `Level ${spot.floor_number}`;
-    mShard.textContent  = `Shard ${spot.floor_number}`;
     mPos.textContent    = `R${spot.row} · C${spot.col}`;
-    mStatus.textContent = 'Available';
     mFeatures.innerHTML = (spot.features || []).map(f =>
       `<span class="pill pill-default" style="font-size:11px;">${FEATURE_ICONS[f] || ''} ${f}</span>`
     ).join('') || '<span style="font-size:12px;color:var(--text-4);">No special features</span>';
 
-    mReserveBtn.disabled  = false;
-    mReserveBtn.innerHTML = '🔒 Reserve (3-min hold)';
-    mParkNowBtn.disabled  = false;
-    mParkNowBtn.innerHTML = '🚗 Park Now';
+    // Reset to step 1 defaults
+    selectedAction = 'reserve';
+    actionToggleReserve.classList.add('active');
+    actionToggleParkNow.classList.remove('active');
+    mMobileInput.value = '';
+    mOtpInput.value    = '';
+    mConfirmBtn.disabled    = false;
+    mConfirmBtn.textContent = 'Confirm →';
 
-    modalBackdrop.classList.add('open');
+    actionStep1.style.display = '';
+    actionStep2.style.display = 'none';
+
+    actionModal.classList.add('open');
     document.body.style.overflow = 'hidden';
+    setTimeout(() => mMobileInput.focus(), 60);
   }
 
-  function closeModal() {
-    modalBackdrop.classList.remove('open');
+  function closeActionModal() {
+    actionModal.classList.remove('open');
     document.body.style.overflow = '';
     selectedSpot = null;
   }
 
-  mReserveBtn.addEventListener('click', async () => {
-    if (!selectedSpot) return;
-    const user = getUser();
-    if (!user) { closeModal(); openAuthModal(); return; }
+  mCancelBtn.addEventListener('click', closeActionModal);
+  actionModal.addEventListener('click', e => { if (e.target === actionModal) closeActionModal(); });
 
-    mReserveBtn.disabled  = true;
-    mReserveBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Holding…';
+  // ── Step 1: Confirm ──────────────────────────────────────────────────
+  mConfirmBtn.addEventListener('click', async () => {
+    const mobile = mMobileInput.value.trim().replace(/[\s\-]/g, '');
+
+    if (!/^\d{11}$/.test(mobile)) {
+      toast('Enter a valid 11-digit mobile number (e.g. 09XXXXXXXXX).', 'error');
+      mMobileInput.focus();
+      return;
+    }
+
+    mConfirmBtn.disabled    = true;
+    mConfirmBtn.textContent = 'Checking…';
 
     try {
-      const userId = 'user_' + Date.now();
-      const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {}, user.mobile, user.token);
+      const check = await ParkingAPI.checkMobile(mobile);
 
-      sessionStorage.setItem('reservation', JSON.stringify({
-        spotId:       selectedSpot.spotId,
-        spotNum:      selectedSpot.spotNum,
-        floor:        selectedSpot.floor_number,
-        row:          selectedSpot.row,
-        col:          selectedSpot.col,
-        features:     selectedSpot.features,
-        lockId:       result.lockId,
-        expiresAt:    result.expiresAt,
-        userId,
-        mobileNumber: user.mobile,
-      }));
+      if (check.locked) {
+        const until = new Date(check.lockoutUntil).toLocaleString();
+        toast(`Number locked until ${until}. (${check.strikes}/3 strikes recorded)`, 'error');
+        return;
+      }
 
-      window.location.href = 'confirm.html';
+      if (check.hasActiveSession) {
+        toast('This number already has an active parking session. Use a different number.', 'error');
+        return;
+      }
+
+      // Proceed to OTP
+      const masked = mobile.slice(0, 4) + 'XXXX' + mobile.slice(8);
+      mOtpSub.textContent = `Enter the 6-digit code sent to ${masked}`;
+      mOtpInput.value = '';
+      mOtpVerifyBtn.disabled    = false;
+      mOtpVerifyBtn.textContent = 'Verify & Confirm';
+      actionStep1.style.display = 'none';
+      actionStep2.style.display = '';
+      setTimeout(() => mOtpInput.focus(), 60);
+
     } catch (err) {
-      toast(err.message || 'Could not hold spot. Try another.', 'error');
-      mReserveBtn.disabled  = false;
-      mReserveBtn.innerHTML = '🔒 Reserve (3-min hold)';
-      closeModal();
-      loadFloor(currentFloor);
+      toast(err.message || 'Failed to validate. Please try again.', 'error');
+    } finally {
+      mConfirmBtn.disabled    = false;
+      mConfirmBtn.textContent = 'Confirm →';
     }
   });
 
-  mParkNowBtn.addEventListener('click', async () => {
-    if (!selectedSpot) return;
-    const user = getUser();
-    if (!user) { closeModal(); openAuthModal(); return; }
+  // ── Step 2: Back ─────────────────────────────────────────────────────
+  mOtpBackBtn.addEventListener('click', () => {
+    actionStep2.style.display = 'none';
+    actionStep1.style.display = '';
+    setTimeout(() => mMobileInput.focus(), 60);
+  });
 
-    mParkNowBtn.disabled  = true;
-    mParkNowBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;"></span> Parking…';
+  // ── Step 2: Verify OTP & execute action ──────────────────────────────
+  mOtpVerifyBtn.addEventListener('click', async () => {
+    const otp    = mOtpInput.value.trim();
+    const mobile = mMobileInput.value.trim().replace(/[\s\-]/g, '');
+
+    if (!VALID_OTPS.includes(otp)) {
+      toast('Invalid OTP. Demo codes: 123456 · 888888 · 000000', 'error');
+      mOtpInput.select();
+      return;
+    }
+
+    mOtpVerifyBtn.disabled    = true;
+    mOtpVerifyBtn.textContent = 'Processing…';
 
     try {
-      const result = await ParkingAPI.parkNow(selectedSpot.spotId, user.mobile, user.token, {});
-      toast(`Parked at P${String(selectedSpot.spotNum).padStart(3, '0')}! Txn: ${result.transactionId}`, 'success', 5000);
-      closeModal();
-      loadFloor(currentFloor);
+      if (selectedAction === 'park_now') {
+        const result = await ParkingAPI.parkNow(selectedSpot.spotId, mobile, {});
+        toast(`Parked at P${String(selectedSpot.spotNum).padStart(3, '0')}! Txn: ${result.transactionId}`, 'success', 5000);
+        closeActionModal();
+        loadFloor(currentFloor);
+      } else {
+        const userId = 'user_' + Date.now();
+        const result = await ParkingAPI.softLock(selectedSpot.spotId, userId, {}, mobile);
+
+        sessionStorage.setItem('reservation', JSON.stringify({
+          spotId:       selectedSpot.spotId,
+          spotNum:      selectedSpot.spotNum,
+          floor:        selectedSpot.floor_number,
+          row:          selectedSpot.row,
+          col:          selectedSpot.col,
+          features:     selectedSpot.features,
+          lockId:       result.lockId,
+          expiresAt:    result.expiresAt,
+          userId,
+          mobileNumber: mobile,
+        }));
+
+        window.location.href = 'confirm.html';
+      }
     } catch (err) {
-      toast(err.message || 'Could not park now. Try another spot.', 'error');
-      mParkNowBtn.disabled  = false;
-      mParkNowBtn.innerHTML = '🚗 Park Now';
+      toast(err.message || 'Action failed. Please try again.', 'error');
+      mOtpVerifyBtn.disabled    = false;
+      mOtpVerifyBtn.textContent = 'Verify & Confirm';
     }
   });
 
-  // ── Wiring ────────────────────────────────────────────────────────────
+  // ── Event wiring ─────────────────────────────────────────────────────
   document.getElementById('refresh-btn').addEventListener('click', () => loadFloor(currentFloor, true));
 
   document.querySelectorAll('.sort-chip').forEach(chip => {
@@ -233,7 +227,7 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     });
   });
 
-  // ── Init ──────────────────────────────────────────────────────────────
+  // ── Init ─────────────────────────────────────────────────────────────
   init();
   setInterval(() => loadFloor(currentFloor), 30000);
 
@@ -390,7 +384,7 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     }
   }
 
-  async function handleSpotClick(el) {
+  function handleSpotClick(el) {
     const spotId = el.dataset.id;
     const spot   = currentSpots.find(s => s.spotId === spotId);
     if (!spot) return;
@@ -401,24 +395,7 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     }
 
     selectedSpot = spot;
-
-    const user = getUser();
-    if (!user) {
-      openAuthModal();
-      return;
-    }
-
-    try {
-      const status = await UserAPI.status(user.mobile);
-      if (status.locked) {
-        const until = new Date(status.lockoutUntil).toLocaleString();
-        toast(`Account locked until ${until}. (3 no-show strikes recorded)`, 'error');
-        selectedSpot = null;
-        return;
-      }
-    } catch { /* network error — proceed */ }
-
-    openChoiceModal(spot);
+    openActionModal(spot);
   }
 
   async function loadRecommendations() {
@@ -447,8 +424,6 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     const spot = currentSpots.find(s => s.spotId === spotId);
     if (!spot || spot.status !== 'available') return;
     selectedSpot = spot;
-    const user = getUser();
-    if (!user) { openAuthModal(); return; }
-    openChoiceModal(spot);
+    openActionModal(spot);
   };
 }

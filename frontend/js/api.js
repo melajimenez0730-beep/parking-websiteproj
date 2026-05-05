@@ -31,14 +31,17 @@ export const ParkingAPI = {
   recommend: (level, criteria) =>
     request('GET', `/parking/recommend?level=${level}&criteria=${criteria}`),
 
-  softLock: (spotId, userId, vehicleInfo, mobileNumber = null, userToken = null) =>
-    request('POST', `/parking/spots/${spotId}/soft-lock`, { userId, vehicleInfo, mobileNumber, userToken }),
+  softLock: (spotId, userId, vehicleInfo, mobileNumber = null) =>
+    request('POST', `/parking/spots/${spotId}/soft-lock`, { userId, vehicleInfo, mobileNumber }),
 
   reserve: (spotId, lockId, vehicleInfo) =>
     request('POST', `/parking/spots/${spotId}/reserve`, { lockId, vehicleInfo }),
 
-  parkNow: (spotId, mobileNumber, userToken, vehicleInfo = {}) =>
-    request('POST', `/parking/spots/${spotId}/park-now`, { mobileNumber, userToken, vehicleInfo }),
+  parkNow: (spotId, mobileNumber, vehicleInfo = {}) =>
+    request('POST', `/parking/spots/${spotId}/park-now`, { mobileNumber, vehicleInfo }),
+
+  checkMobile: (mobile) =>
+    request('GET', `/parking/check-mobile?mobile=${encodeURIComponent(mobile)}`),
 
   occupy: (spotId, vehicleInfo) =>
     request('POST', `/parking/spots/${spotId}/occupy`, { vehicleInfo }),

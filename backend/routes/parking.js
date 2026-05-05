@@ -19,8 +19,8 @@ const PRIORITY = {
 const SOFT_LOCK_MS = 3 * 60 * 1000;
 
 async function recordUserStrike(mobileNumber) {
-  const user = await User.findOne({ mobileNumber });
-  if (!user) return;
+  let user = await User.findOne({ mobileNumber });
+  if (!user) user = await User.create({ mobileNumber, verified: true });
   user.strikes += 1;
   if (user.strikes >= 3 && (!user.lockoutUntil || user.lockoutUntil < new Date())) {
     user.lockoutUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -216,18 +216,43 @@ router.post('/spots/:spotId/reserve', async (req, res) => {
   }
 });
 
+router.get('/check-mobile', async (req, res) => {
+  const { mobile } = req.query;
+  if (!mobile) return res.status(400).json({ error: 'mobile query param required' });
+
+  try {
+    await releaseExpiredLocks();
+
+    const [activeSpot, user] = await Promise.all([
+      ParkingSpot.findOne({ status: 'soft_locked', 'softLock.mobileNumber': mobile }),
+      User.findOne({ mobileNumber: mobile }),
+    ]);
+
+    const locked = !!(user?.lockoutUntil && user.lockoutUntil > new Date());
+
+    res.json({
+      hasActiveSession: !!activeSpot,
+      locked,
+      lockoutUntil: user?.lockoutUntil || null,
+      strikes:      user?.strikes || 0,
+    });
+  } catch (err) {
+    console.error('[check-mobile]', err);
+    res.status(500).json({ error: 'Failed to check mobile status' });
+  }
+});
+
 router.post('/spots/:spotId/park-now', async (req, res) => {
-  const { mobileNumber, userToken, vehicleInfo } = req.body || {};
+  const { mobileNumber, vehicleInfo } = req.body || {};
   const { spotId } = req.params;
 
-  if (!mobileNumber || !userToken) {
-    return res.status(400).json({ error: 'mobileNumber and userToken are required' });
+  if (!mobileNumber) {
+    return res.status(400).json({ error: 'mobileNumber is required' });
   }
 
   try {
-    const user = await verifyUserSession(mobileNumber, userToken);
-    if (!user) return res.status(401).json({ error: 'Invalid session. Please log in again.' });
-    if (user.lockoutUntil && user.lockoutUntil > new Date()) {
+    const user = await User.findOne({ mobileNumber });
+    if (user?.lockoutUntil && user.lockoutUntil > new Date()) {
       return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
     }
 
