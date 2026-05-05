@@ -16,7 +16,8 @@ const PRIORITY = {
   disability: [1, 2, ...r(3, 216)],
 };
 
-const SOFT_LOCK_MS = 3 * 60 * 1000;
+const SOFT_LOCK_MS       = 3 * 60 * 1000;
+const RESERVED_TIMEOUT_MS = 30 * 60 * 1000;
 
 async function recordUserStrike(mobileNumber) {
   let user = await User.findOne({ mobileNumber });
@@ -56,6 +57,39 @@ async function releaseExpiredLocks() {
   }
 }
 
+async function releaseExpiredReservations() {
+  const cutoff  = new Date(Date.now() - RESERVED_TIMEOUT_MS);
+  const expired = await ParkingSpot.find({ status: 'reserved', reservedAt: { $lt: cutoff } });
+
+  for (const spot of expired) {
+    const mobile = spot.mobileNumber;
+
+    await ParkingSpot.findOneAndUpdate(
+      { _id: spot._id, version: spot.version },
+      {
+        $set: { status: 'available', mobileNumber: null, vehicle: null, softLock: null, reservedAt: null, reservedBy: null },
+        $inc: { version: 1 },
+      }
+    );
+    await Transaction.create({
+      transactionId: uuid(),
+      floor_number:  spot.floor_number,
+      spotId:        spot.spotId,
+      spotNum:       spot.spotNum,
+      type:          'expire',
+      notes:         'Reserved spot auto-released after 30-minute timeout',
+    });
+
+    if (mobile) {
+      recordUserStrike(mobile).catch(e => console.warn('[reserve-expire-strike]', e.message));
+    }
+  }
+}
+
+async function releaseExpired() {
+  await Promise.allSettled([releaseExpiredLocks(), releaseExpiredReservations()]);
+}
+
 async function verifyUserSession(mobileNumber, userToken) {
   if (!mobileNumber || !userToken) return null;
   return User.findOne({ mobileNumber, sessionToken: userToken });
@@ -77,7 +111,7 @@ router.get('/levels/:level/spots', async (req, res) => {
   }
 
   try {
-    await releaseExpiredLocks();
+    await releaseExpired();
     const spots = await ParkingSpot.find({ floor_number: level }).sort({ spotNum: 1 });
     res.json(spots);
   } catch (err) {
@@ -95,7 +129,7 @@ router.get('/recommend', async (req, res) => {
   }
 
   try {
-    await releaseExpiredLocks();
+    await releaseExpired();
 
     const available = await ParkingSpot.find({ floor_number: level, status: 'available' });
     const availSet  = new Set(available.map(s => s.spotNum));
@@ -127,7 +161,7 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
       return res.status(409).json({ error: 'This mobile number already has an active parking spot.' });
     }
 
-    try { await releaseExpiredLocks(); } catch (e) { console.warn('[soft-lock] releaseExpiredLocks failed:', e.message); }
+    try { await releaseExpired(); } catch (e) { console.warn('[soft-lock] releaseExpired failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
     console.log('[soft-lock] spot found:', spot?.spotId, 'status:', spot?.status);
@@ -242,7 +276,7 @@ router.get('/check-mobile', async (req, res) => {
   if (!mobile) return res.status(400).json({ error: 'mobile query param required' });
 
   try {
-    await releaseExpiredLocks();
+    await releaseExpired();
 
     const [activeSpot, user] = await Promise.all([
       ParkingSpot.findOne({ mobileNumber: mobile, status: { $in: ['soft_locked', 'reserved', 'occupied'] } }),
@@ -281,7 +315,7 @@ router.post('/spots/:spotId/park-now', async (req, res) => {
       return res.status(409).json({ error: 'This mobile number already has an active parking spot.' });
     }
 
-    try { await releaseExpiredLocks(); } catch (e) { console.warn('[park-now] releaseExpiredLocks failed:', e.message); }
+    try { await releaseExpired(); } catch (e) { console.warn('[park-now] releaseExpired failed:', e.message); }
 
     const spot = await ParkingSpot.findOne({ spotId });
     if (!spot) return res.status(404).json({ error: 'Spot not found' });

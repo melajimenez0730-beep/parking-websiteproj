@@ -449,20 +449,20 @@ export function initMap(ParkingAPI, UserAPI, toast) {
         else { clearInterval(tooltipTimer); tooltipTimer = null; }
       }, 1000);
     } else if (spot.status === 'reserved') {
-      const reservedAt = spot.reservedAt ? new Date(spot.reservedAt) : null;
-      const elapsed = () => {
-        if (!reservedAt) return '--:--';
-        const s = Math.round((Date.now() - reservedAt) / 1000);
+      const expiry = spot.reservedAt ? new Date(new Date(spot.reservedAt).getTime() + 30 * 60 * 1000) : null;
+      const countdown = () => {
+        if (!expiry) return '--:--';
+        const s = Math.max(0, Math.round((expiry - Date.now()) / 1000));
         return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
       };
       statusHtml = `
         <div style="color:var(--amber);font-weight:700;font-size:12px;">✓ RESERVED</div>
-        <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Held for <span id="tt-countdown" style="font-family:var(--font-mono);color:var(--amber);">${elapsed()}</span></div>
+        <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Expires in <span id="tt-countdown" style="font-family:var(--font-mono);color:var(--amber);">${countdown()}</span></div>
       `;
       if (tooltipTimer) clearInterval(tooltipTimer);
       tooltipTimer = setInterval(() => {
         const cd = document.getElementById('tt-countdown');
-        if (cd) cd.textContent = elapsed();
+        if (cd) cd.textContent = countdown();
         else { clearInterval(tooltipTimer); tooltipTimer = null; }
       }, 1000);
     } else if (spot.status === 'occupied') {
