@@ -141,13 +141,6 @@ router.post('/token-login', async (req, res) => {
       return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
     }
 
-    // Block if this mobile is already claimed by another active session
-    if (user && user.sessionToken) {
-      return res.status(409).json({
-        error: 'This mobile number is already in use by another session. The original user must log out first.',
-      });
-    }
-
     const sessionToken = uuid();
     if (user) {
       user.verified     = true;

@@ -231,8 +231,7 @@ router.get('/check-mobile', async (req, res) => {
     const locked = !!(user?.lockoutUntil && user.lockoutUntil > new Date());
 
     res.json({
-      hasActiveSession: !!activeSpot,          // spot is currently being held by this number
-      hasClaim:         !!(user?.sessionToken), // mobile is logged-in on another device
+      hasActiveSession: !!activeSpot,
       locked,
       lockoutUntil: user?.lockoutUntil || null,
       strikes:      user?.strikes || 0,

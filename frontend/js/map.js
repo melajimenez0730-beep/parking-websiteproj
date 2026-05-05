@@ -54,6 +54,7 @@ export function initMap(ParkingAPI, UserAPI, toast) {
   let selectedAction  = 'reserve';
   let currentFloor    = 1;
   let currentCriteria = 'entrance';
+  let tooltipTimer    = null;
 
   const facilityGrid = document.getElementById('facility-grid');
 
@@ -218,10 +219,6 @@ export function initMap(ParkingAPI, UserAPI, toast) {
         if (check.locked) {
           const until = new Date(check.lockoutUntil).toLocaleString();
           toast(`Number locked until ${until}. (${check.strikes}/3 strikes)`, 'error');
-          return;
-        }
-        if (check.hasClaim) {
-          toast('This mobile number is already logged in on another device. The original user must log out first.', 'error');
           return;
         }
         if (check.hasActiveSession) {
@@ -417,7 +414,66 @@ export function initMap(ParkingAPI, UserAPI, toast) {
     facilityGrid.innerHTML = html;
     facilityGrid.querySelectorAll('.spot-cell').forEach(el => {
       el.addEventListener('click', () => handleSpotClick(el));
+      if (el.dataset.status && el.dataset.status !== 'available') {
+        el.addEventListener('mouseenter', () => {
+          const spot = currentSpots.find(s => s.spotId === el.dataset.id);
+          if (spot) showSpotTooltip(el, spot);
+        });
+        el.addEventListener('mouseleave', hideSpotTooltip);
+      }
     });
+  }
+
+  function showSpotTooltip(el, spot) {
+    const tt  = document.getElementById('spot-tooltip');
+    if (!tt) return;
+    const pad = String(spot.spotNum).padStart(3, '0');
+    const typeSuffix = spot.spotType === 'PWD' ? ' · PWD' : spot.spotType === 'Motorcycle' ? ' · Moto' : '';
+
+    let statusHtml = '';
+    if (spot.status === 'soft_locked') {
+      const expiry = spot.softLock?.expiresAt ? new Date(spot.softLock.expiresAt) : null;
+      const countdown = () => {
+        if (!expiry) return '--:--';
+        const s = Math.max(0, Math.round((expiry - Date.now()) / 1000));
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      };
+      statusHtml = `
+        <div style="color:var(--amber);font-weight:700;font-size:12px;">⏱ HELD</div>
+        <div style="color:var(--text-3);font-size:11px;margin-top:3px;">Expires in <span id="tt-countdown" style="font-family:var(--font-mono);color:var(--amber);">${countdown()}</span></div>
+      `;
+      if (tooltipTimer) clearInterval(tooltipTimer);
+      tooltipTimer = setInterval(() => {
+        const cd = document.getElementById('tt-countdown');
+        if (cd) cd.textContent = countdown();
+        else { clearInterval(tooltipTimer); tooltipTimer = null; }
+      }, 1000);
+    } else if (spot.status === 'reserved') {
+      statusHtml = `<div style="color:var(--amber);font-weight:700;font-size:12px;">✓ RESERVED</div><div style="color:var(--text-3);font-size:11px;margin-top:3px;">Confirmed reservation</div>`;
+    } else if (spot.status === 'occupied') {
+      statusHtml = `<div style="color:var(--red);font-weight:700;font-size:12px;">● OCCUPIED</div><div style="color:var(--text-3);font-size:11px;margin-top:3px;">Currently in use</div>`;
+    }
+
+    tt.innerHTML = `
+      <div style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text-1);margin-bottom:4px;">P${pad}${typeSuffix}</div>
+      <div style="font-size:10px;color:var(--text-4);margin-bottom:7px;">Floor ${spot.floor_number} · R${spot.row} · C${spot.col}</div>
+      ${statusHtml}
+    `;
+    tt.style.display = 'block';
+
+    const rect = el.getBoundingClientRect();
+    let left = rect.right + 8;
+    let top  = rect.top;
+    if (left + 170 > window.innerWidth)  left = rect.left - 170 - 8;
+    if (top  + 110 > window.innerHeight) top  = window.innerHeight - 115;
+    tt.style.left = left + 'px';
+    tt.style.top  = top  + 'px';
+  }
+
+  function hideSpotTooltip() {
+    const tt = document.getElementById('spot-tooltip');
+    if (tt) tt.style.display = 'none';
+    if (tooltipTimer) { clearInterval(tooltipTimer); tooltipTimer = null; }
   }
 
   function renderIsland(label, colLeft, colRight, map) {

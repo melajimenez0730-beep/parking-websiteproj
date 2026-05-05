@@ -494,9 +494,26 @@
     }
     .action-toggle:hover  { background: var(--bg-card); color: var(--text-2); }
     .action-toggle.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); font-weight: 700; }
+
+    /* Spot hover tooltip */
+    #spot-tooltip {
+      position: fixed;
+      z-index: 900;
+      pointer-events: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--r-sm);
+      padding: 9px 13px;
+      min-width: 155px;
+      box-shadow: var(--shadow-xl);
+      display: none;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Spot hover tooltip -->
+  <div id="spot-tooltip"></div>
 
   <!-- ── Action Tab Modal ── -->
   <div class="reserve-modal-backdrop" id="action-modal">
