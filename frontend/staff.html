@@ -189,6 +189,120 @@
       .filters-bar { gap: 6px; }
       .filter-date { width: 130px; font-size: 12px; }
     }
+
+    /* PWD approval cards */
+    .pwd-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(59,130,246,0.35);
+      border-radius: var(--r-lg);
+      padding: 20px;
+    }
+    .pwd-card-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
+    .pwd-id-images   { display:flex; gap:10px; margin-bottom:16px; }
+    .pwd-id-img      { flex:1; min-width:0; }
+    .pwd-id-img img  { width:100%; border-radius:var(--r-sm); border:1px solid var(--border-subtle); display:block; }
+    .pwd-id-label    { font-size:11px; color:var(--text-4); text-align:center; margin-top:4px; }
+
+    /* ── Status tabs (Spot Management) ── */
+    .sm-tab {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--r-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-input); color: var(--text-3);
+      font-size: 12px; font-family: var(--font); cursor: pointer;
+      transition: all var(--t-base);
+    }
+    .sm-tab:hover { color: var(--text-2); border-color: var(--border-default); }
+    .sm-tab.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .sm-tab.active-reserved { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber); }
+    .sm-tab.active-occupied { background: var(--red-bg);   border-color: var(--red-border);   color: var(--red); }
+    .sm-tab.active-exiting  { background: var(--amber-bg); border-color: var(--amber-border); color: var(--amber); }
+    .sm-tab.active-available{ background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+    .sm-tab-count {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+      padding: 1px 5px; border-radius: var(--r-full);
+      background: rgba(255,255,255,0.07);
+    }
+
+    /* ── Live Map ── */
+    :root {
+      --blue: #3b82f6; --blue-border: rgba(59,130,246,0.4); --blue-bg: rgba(59,130,246,0.08);
+      --moto: #a855f7; --moto-border: rgba(168,85,247,0.4); --moto-bg: rgba(168,85,247,0.08);
+      --border-medium: rgba(255,255,255,0.12);
+    }
+    .lm-floor-btn {
+      padding: 6px 14px; border-radius: var(--r-sm); border: 1px solid var(--border-subtle);
+      background: var(--bg-input); color: var(--text-3); font-size: 12px;
+      font-family: var(--font); cursor: pointer; transition: all var(--t-base);
+    }
+    .lm-floor-btn.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .lm-stat { font-size: 12px; color: var(--text-3); }
+    .lm-stat.green strong { color: var(--green); }
+    .lm-stat.amber strong { color: var(--amber); }
+    .lm-stat.red   strong { color: var(--red); }
+    .lm-entrance-bar {
+      display: flex; align-items: center; justify-content: center; height: 30px;
+      margin-bottom: 8px; border: 1px solid var(--border-subtle); border-radius: var(--r-sm);
+      background: var(--bg-surface); flex-shrink: 0;
+    }
+    .lm-entrance-label { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--text-4); }
+    .lm-grid-wrap { height: 520px; overflow: hidden; }
+    .lm-facility-grid { display: flex; width: 100%; height: 100%; align-items: stretch; }
+    .lm-island { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .lm-island-label {
+      text-align: center; font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--text-4); padding: 0 0 5px; flex-shrink: 0;
+    }
+    .lm-island-block { flex: 1; min-height: 0; display: flex; gap: 3px; }
+    .lm-spot-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .lm-island-drive {
+      flex-shrink: 0; width: 16px; display: flex; align-items: center; justify-content: center;
+      font-size: 6px; color: var(--text-4);
+      border-left: 1px dashed var(--border-subtle); border-right: 1px dashed var(--border-subtle);
+    }
+    .lm-aisle { width: 32px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+    .lm-aisle-track {
+      flex: 1; width: 1px;
+      background: repeating-linear-gradient(to bottom, var(--border-medium) 0, var(--border-medium) 5px, transparent 5px, transparent 12px);
+    }
+    .lm-aisle-label { font-size: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-4); writing-mode: vertical-rl; padding: 6px 0; }
+    .lm-spot-cell {
+      flex: 1; min-width: 0; min-height: 0; border: 1px solid var(--border-default); border-radius: 4px;
+      background: var(--bg-elevated, #1a1a22); display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 2px; cursor: pointer; transition: all 0.15s ease; user-select: none;
+      position: relative; overflow: hidden;
+    }
+    .lm-spot-empty { flex: 1; min-width: 0; min-height: 0; visibility: hidden; pointer-events: none; }
+    .lm-spot-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .lm-spot-id  { font-family: var(--font-mono); font-size: 8px; font-weight: 700; line-height: 1; }
+    .lm-spot-hc  { position: absolute; top: 2px; right: 2px; font-size: 7px; line-height: 1; }
+    .lm-spot-cell[data-status="available"] { border-color: var(--green-border); border-style: dashed; }
+    .lm-spot-cell[data-status="available"] .lm-spot-dot { background: var(--green); box-shadow: 0 0 5px rgba(34,197,94,0.5); }
+    .lm-spot-cell[data-status="available"] .lm-spot-id  { color: var(--green); }
+    .lm-spot-cell[data-status="available"]:hover { border-style: solid; border-color: var(--green); background: var(--green-bg); }
+    .lm-spot-cell[data-status="reserved"],
+    .lm-spot-cell[data-status="soft_locked"] { border-color: var(--amber-border); }
+    .lm-spot-cell[data-status="reserved"] .lm-spot-dot,
+    .lm-spot-cell[data-status="soft_locked"] .lm-spot-dot { background: var(--amber); box-shadow: 0 0 5px rgba(245,158,11,0.4); }
+    .lm-spot-cell[data-status="reserved"] .lm-spot-id,
+    .lm-spot-cell[data-status="soft_locked"] .lm-spot-id  { color: var(--amber); }
+    .lm-spot-cell[data-status="reserved"]:hover,
+    .lm-spot-cell[data-status="soft_locked"]:hover { background: var(--amber-bg); border-color: var(--amber); }
+    .lm-spot-cell[data-status="occupied"] { border-color: var(--red-border); }
+    .lm-spot-cell[data-status="occupied"] .lm-spot-dot { background: var(--red); box-shadow: 0 0 5px rgba(239,68,68,0.4); }
+    .lm-spot-cell[data-status="occupied"] .lm-spot-id  { color: var(--red); }
+    .lm-spot-cell[data-status="occupied"]:hover { background: var(--red-bg); border-color: var(--red); }
+    .lm-spot-cell[data-status="exiting"] { border-color: var(--amber-border); }
+    .lm-spot-cell[data-status="exiting"] .lm-spot-dot { background: var(--amber); }
+    .lm-spot-cell[data-status="exiting"] .lm-spot-id  { color: var(--amber); }
+    .lm-spot-cell.pwd[data-status="available"]            { border-color: var(--blue-border); border-style: solid; }
+    .lm-spot-cell.pwd[data-status="available"] .lm-spot-dot { background: var(--blue); box-shadow: 0 0 6px rgba(59,130,246,0.5); }
+    .lm-spot-cell.pwd[data-status="available"] .lm-spot-id  { color: var(--blue); }
+    .lm-spot-cell.moto[data-status="available"]            { border-color: var(--moto-border); border-style: solid; }
+    .lm-spot-cell.moto[data-status="available"] .lm-spot-dot { background: var(--moto); box-shadow: 0 0 6px rgba(168,85,247,0.5); }
+    .lm-spot-cell.moto[data-status="available"] .lm-spot-id  { color: var(--moto); }
+    .legend-row     { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text-3); padding: 2px 0; }
+    .legend-dot-sm  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -207,6 +321,11 @@
       <div class="drawer-nav-item" data-view="transactions"><span class="icon">📋</span> Transactions</div>
       <div class="drawer-nav-item" data-view="spots"><span class="icon">🅿️</span> Spot Management</div>
       <div class="drawer-nav-item" data-view="analytics"><span class="icon">📈</span> Analytics</div>
+      <div class="drawer-nav-item" data-view="pwd" style="position:relative;">
+        <span class="icon">♿</span> PWD Approvals
+        <span id="pwd-nav-badge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--red);color:#fff;border-radius:var(--r-full);font-size:10px;font-weight:700;padding:2px 7px;min-width:18px;text-align:center;line-height:16px;"></span>
+      </div>
+      <div class="drawer-nav-item" data-view="livemap"><span class="icon">🗺️</span> Live Map</div>
 
       <div class="divider" style="margin:16px 0;"></div>
       <div style="font-size:11px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.5px;padding:4px 14px;margin-bottom:8px;">Shards</div>
@@ -223,24 +342,57 @@
   <!-- ── Spot Editor Modal ─────────────────────────────────────────── -->
   <div class="spot-modal-backdrop" id="spot-editor-modal">
     <div class="modal" style="max-width:400px;">
-      <div class="modal-title" id="se-title">Edit Spot P01</div>
+      <div class="modal-title" id="se-title">Force Release P01</div>
       <div class="modal-sub"   id="se-sub">Floor 1 · Row 1 · Col 1</div>
 
-      <div class="form-group" style="margin-bottom:16px;">
-        <label class="form-label">New Status</label>
-        <select class="form-select" id="se-status">
-          <option value="available">✅ Available</option>
-          <option value="reserved">🟡 Reserved</option>
-          <option value="occupied">🔴 Occupied</option>
-        </select>
+      <div id="se-occupant-info" style="display:none;margin:14px 0;padding:14px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-sm);">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-4);margin-bottom:8px;">Current Occupant</div>
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:5px 10px;font-size:13px;">
+          <span style="color:var(--text-4);">Status</span><span id="se-occ-status" style="font-weight:600;"></span>
+          <span style="color:var(--text-4);">Owner</span><span id="se-occ-owner" style="color:var(--text-2);"></span>
+          <span style="color:var(--text-4);">Plate</span><span id="se-occ-plate" style="font-family:var(--font-mono);color:var(--text-2);"></span>
+          <span style="color:var(--text-4);">Mobile</span><span id="se-occ-mobile" style="font-family:var(--font-mono);color:var(--text-2);"></span>
+        </div>
       </div>
-      <div class="form-group" style="margin-bottom:24px;">
+      <div id="se-available-msg" style="display:none;margin:14px 0;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r-sm);font-size:13px;color:var(--green);">
+        ✅ This spot is already available — no action needed.
+      </div>
+      <div id="se-release-info" style="display:none;margin-bottom:14px;padding:10px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--r-sm);font-size:12px;color:var(--text-3);">
+        ⚠ Force-releasing will immediately free this spot and log a staff override.
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
         <label class="form-label">Notes (optional)</label>
-        <input class="form-input" id="se-notes" type="text" placeholder="Reason for change…">
+        <input class="form-input" id="se-notes" type="text" placeholder="Reason for force release…">
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" id="se-cancel" style="min-width:80px;">Cancel</button>
-        <button class="btn btn-primary btn-full" id="se-save">Save Changes</button>
+        <button class="btn btn-full" id="se-save" style="background:var(--red);color:#fff;border:1px solid var(--red-border,rgba(239,68,68,0.4));">⚡ Force Release</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LM Spot Detail Modal ─────────────────────────────────────── -->
+  <div class="spot-modal-backdrop" id="lm-spot-modal">
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-title" id="lm-spot-title">Spot P01</div>
+      <div class="modal-sub"   id="lm-spot-sub">Floor 1 · Row 1 · Col 1</div>
+
+      <div id="lm-occupant-info" style="margin:14px 0;padding:14px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--r-sm);">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-4);margin-bottom:8px;">Occupant Details</div>
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:5px 10px;font-size:13px;">
+          <span style="color:var(--text-4);">Status</span><span id="lm-occ-status" style="font-weight:600;"></span>
+          <span style="color:var(--text-4);">Owner</span><span id="lm-occ-owner" style="color:var(--text-2);"></span>
+          <span style="color:var(--text-4);">Plate</span><span id="lm-occ-plate" style="font-family:var(--font-mono);color:var(--text-2);"></span>
+          <span style="color:var(--text-4);">Mobile</span><span id="lm-occ-mobile" style="font-family:var(--font-mono);color:var(--text-2);"></span>
+        </div>
+      </div>
+      <div id="lm-available-info" style="display:none;margin:14px 0;padding:12px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--r-sm);font-size:13px;color:var(--green);">
+        ✅ This spot is currently available.
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="lm-close-btn" style="min-width:80px;">Close</button>
+        <button class="btn btn-full" id="lm-release-btn" style="background:var(--red);color:#fff;border:1px solid var(--red-border,rgba(239,68,68,0.4));">⚡ Force Release</button>
       </div>
     </div>
   </div>
@@ -412,6 +564,8 @@
           <button class="btn btn-ghost btn-sm" id="sm-refresh-btn">↻ Refresh</button>
         </div>
 
+        <div id="sm-status-tabs" style="display:none;margin-bottom:12px;display:flex;gap:4px;flex-wrap:wrap;"></div>
+
         <div class="txn-card">
           <div class="table-wrap">
             <table class="table">
@@ -462,6 +616,59 @@
         <div class="chart-card" style="margin-top:16px;">
           <div class="chart-card-title">Transaction Types (last 24h)</div>
           <canvas id="type-chart" height="120"></canvas>
+        </div>
+      </div>
+
+      <!-- ── VIEW: PWD Approvals ── -->
+      <div class="view-section" id="view-pwd">
+        <div class="dash-section-title">
+          ♿ PWD Approvals
+          <span class="dash-section-badge">Pending verification</span>
+        </div>
+        <div id="pwd-list" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="text-align:center;padding:48px;color:var(--text-4);">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Live Map ── -->
+      <div class="view-section" id="view-livemap">
+        <div class="dash-section-title" style="margin-bottom:12px;">
+          🗺️ Live Map
+          <span class="dash-section-badge">Real-time floor view</span>
+          <button class="btn btn-ghost btn-sm" id="lm-refresh-btn" style="margin-left:auto;">↻ Refresh</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <div style="display:flex;gap:4px;">
+            <button class="lm-floor-btn active" data-floor="1">Floor 1</button>
+            <button class="lm-floor-btn" data-floor="2">Floor 2</button>
+            <button class="lm-floor-btn" data-floor="3">Floor 3</button>
+          </div>
+          <div style="display:flex;gap:12px;margin-left:auto;flex-wrap:wrap;">
+            <span class="lm-stat">Total: <strong id="lm-stat-total">—</strong></span>
+            <span class="lm-stat green">Available: <strong id="lm-stat-avail">—</strong></span>
+            <span class="lm-stat amber">Reserved: <strong id="lm-stat-res">—</strong></span>
+            <span class="lm-stat red">Occupied: <strong id="lm-stat-occ">—</strong></span>
+          </div>
+        </div>
+
+        <div class="lm-entrance-bar">
+          <span class="lm-entrance-label">🏬 Mall Entrance</span>
+        </div>
+
+        <div class="lm-grid-wrap">
+          <div class="lm-facility-grid" id="lm-grid">
+            <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;flex-wrap:wrap;padding:10px 0 2px;">
+          <div class="legend-row"><span class="legend-dot-sm" style="background:var(--green);"></span> Available</div>
+          <div class="legend-row"><span class="legend-dot-sm" style="background:var(--amber);"></span> Reserved / Held</div>
+          <div class="legend-row"><span class="legend-dot-sm" style="background:var(--red);"></span> Occupied</div>
+          <div class="legend-row"><span class="legend-dot-sm" style="background:var(--blue);"></span> PWD</div>
+          <div class="legend-row"><span class="legend-dot-sm" style="background:var(--moto);"></span> Motorcycle</div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-4);">Click any spot to view details or force-release</div>
         </div>
       </div>
 

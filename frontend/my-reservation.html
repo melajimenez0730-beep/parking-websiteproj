@@ -156,6 +156,20 @@
 
   </div>
 
+  <style>
+    .checkin-section {
+      padding: 16px 28px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .parked-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      background: var(--red-bg); border: 1px solid var(--red-border);
+      border-radius: var(--r-full);
+      font-size: 12px; font-weight: 600; color: var(--red);
+    }
+  </style>
+
   <script type="module">
     import { ParkingAPI, toast, initTheme } from './js/api.js';
     initTheme();
@@ -236,9 +250,16 @@
 
           <div class="txn-box">Transaction ID: ${res.transactionId || '—'}</div>
 
+          <div class="checkin-section" id="checkin-section">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-4);">
+              <div class="spinner" style="width:12px;height:12px;border-width:2px;"></div>
+              Checking live status…
+            </div>
+          </div>
+
           <div class="res-footer">
             <button class="btn btn-danger btn-sm" id="clear-btn">Clear Record</button>
-            <a href="map.html" class="btn btn-primary btn-full">See Parking Area →</a>
+            <a href="map.html" class="btn btn-ghost btn-full">See Parking Area →</a>
           </div>
         </div>
 
@@ -253,6 +274,53 @@
         toast('Reservation record cleared.', 'info');
         render();
       });
+
+      checkLiveStatus(res);
+    }
+
+    async function checkLiveStatus(res) {
+      const section = document.getElementById('checkin-section');
+      if (!section || !res.spotId) { if (section) section.style.display = 'none'; return; }
+
+      try {
+        const spots = await ParkingAPI.getSpots(res.floor);
+        const spot  = spots.find(s => s.spotId === res.spotId);
+
+        if (!spot || spot.status === 'available') {
+          section.innerHTML = '<div style="font-size:12px;color:var(--text-4);">⚠ This reservation has expired or been released.</div>';
+          return;
+        }
+
+        if (spot.status === 'occupied' || spot.status === 'exiting') {
+          section.innerHTML = '<span class="parked-badge">🚗 Currently Parked</span>';
+          return;
+        }
+
+        if (spot.status === 'reserved') {
+          section.innerHTML = `
+            <div style="font-size:13px;color:var(--text-3);margin-bottom:10px;">Your spot is waiting for you. Tap below when you've parked.</div>
+            <button class="btn btn-primary btn-full" id="checkin-btn">🚗 I've Arrived — Check In</button>
+          `;
+          document.getElementById('checkin-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('checkin-btn');
+            btn.disabled    = true;
+            btn.textContent = 'Checking in…';
+            try {
+              await ParkingAPI.occupy(res.spotId, res.vehicle);
+              toast('Checked in! Your spot is now marked as occupied.', 'success');
+              section.innerHTML = '<span class="parked-badge">🚗 Currently Parked</span>';
+            } catch (err) {
+              toast(err.message || 'Check-in failed. Please try again.', 'error');
+              btn.disabled    = false;
+              btn.textContent = "🚗 I've Arrived — Check In";
+            }
+          });
+        } else {
+          section.style.display = 'none';
+        }
+      } catch {
+        section.style.display = 'none';
+      }
     }
 
     render();

@@ -50,6 +50,20 @@ const spotSchema = new mongoose.Schema(
 spotSchema.index({ floor_number: 1, status: 1 });
 spotSchema.index({ floor_number: 1, spotNum: 1 }, { unique: true });
 spotSchema.index({ 'softLock.expiresAt': 1 }, { sparse: true });
-spotSchema.index({ mobileNumber: 1 }, { sparse: true });
+
+// Partial unique index: one mobile number can only hold ONE active spot at a time.
+// Only enforced when status is active (soft_locked/reserved/occupied) AND mobileNumber is set.
+// Released/available spots fall outside the index, so nulls and freed spots never conflict.
+spotSchema.index(
+  { mobileNumber: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: {
+      mobileNumber: { $type: 'string' },
+      status: { $in: ['soft_locked', 'reserved', 'occupied'] },
+    },
+  }
+);
 
 module.exports = mongoose.model('ParkingSpot', spotSchema);

@@ -3,6 +3,7 @@ const { v4: uuid } = require('uuid');
 const router     = express.Router();
 const ParkingSpot  = require('../models/ParkingSpot');
 const Transaction  = require('../models/Transaction');
+const PWDRequest   = require('../models/PWDRequest');
 const { authenticateStaff } = require('../middleware/auth');
 
 router.use(authenticateStaff);
@@ -201,6 +202,99 @@ router.get('/analytics', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Analytics failed' });
+  }
+});
+
+// GET /pwd-requests/count — pending count for badge polling
+router.get('/pwd-requests/count', async (req, res) => {
+  try {
+    const count = await PWDRequest.countDocuments({ status: 'pending', expiresAt: { $gt: new Date() } });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get count' });
+  }
+});
+
+// GET /pwd-requests — pending requests not yet expired
+router.get('/pwd-requests', async (req, res) => {
+  try {
+    const requests = await PWDRequest.find({ status: 'pending', expiresAt: { $gt: new Date() } }).sort({ createdAt: 1 });
+    res.json({ requests });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get PWD requests' });
+  }
+});
+
+// POST /pwd-requests/:requestId/approve
+router.post('/pwd-requests/:requestId/approve', async (req, res) => {
+  const { requestId } = req.params;
+  try {
+    const pwdReq = await PWDRequest.findOne({ requestId });
+    if (!pwdReq) return res.status(404).json({ error: 'PWD request not found' });
+    if (pwdReq.status !== 'pending') return res.status(409).json({ error: `Request is already ${pwdReq.status}` });
+    if (pwdReq.expiresAt < new Date()) {
+      pwdReq.status = 'declined'; await pwdReq.save();
+      return res.status(410).json({ error: 'PWD request has expired' });
+    }
+
+    const spot = await ParkingSpot.findOne({ spotId: pwdReq.spotId });
+    if (!spot) return res.status(404).json({ error: 'Spot not found' });
+
+    const vehicle    = pwdReq.vehicleInfo || {};
+    const newStatus  = pwdReq.action === 'park_now' ? 'occupied' : 'reserved';
+    const statusFields = pwdReq.action === 'park_now'
+      ? { status: 'occupied', mobileNumber: pwdReq.mobileNumber, vehicle, occupiedAt: new Date(), softLock: null }
+      : { status: 'reserved', mobileNumber: pwdReq.mobileNumber, vehicle, reservedAt: new Date(), reservedBy: vehicle.owner || pwdReq.mobileNumber, softLock: null };
+
+    await ParkingSpot.findOneAndUpdate(
+      { _id: spot._id, version: spot.version },
+      { $set: statusFields, $inc: { version: 1 } }
+    );
+
+    pwdReq.status = 'approved';
+    await pwdReq.save();
+
+    await Transaction.create({
+      transactionId: uuid(),
+      floor_number:  spot.floor_number,
+      spotId:        spot.spotId,
+      spotNum:       spot.spotNum,
+      type:          pwdReq.action === 'park_now' ? 'park_now' : 'reserve',
+      vehicle,
+      userId:        pwdReq.mobileNumber,
+      notes:         'PWD ID verified by staff',
+    });
+
+    res.json({ success: true, newStatus });
+  } catch (err) {
+    console.error('[pwd-approve] ERROR:', err);
+    res.status(500).json({ error: 'Failed to approve PWD request' });
+  }
+});
+
+// POST /pwd-requests/:requestId/decline
+router.post('/pwd-requests/:requestId/decline', async (req, res) => {
+  const { requestId } = req.params;
+  try {
+    const pwdReq = await PWDRequest.findOne({ requestId });
+    if (!pwdReq) return res.status(404).json({ error: 'PWD request not found' });
+    if (pwdReq.status !== 'pending') return res.status(409).json({ error: `Request is already ${pwdReq.status}` });
+
+    pwdReq.status = 'declined';
+    await pwdReq.save();
+
+    const spot = await ParkingSpot.findOne({ spotId: pwdReq.spotId });
+    if (spot && spot.status === 'soft_locked' && spot.softLock?.lockId === pwdReq.lockId) {
+      await ParkingSpot.findOneAndUpdate(
+        { _id: spot._id, version: spot.version },
+        { $set: { status: 'available', softLock: null, mobileNumber: null, vehicle: null }, $inc: { version: 1 } }
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[pwd-decline] ERROR:', err);
+    res.status(500).json({ error: 'Failed to decline PWD request' });
   }
 });
 

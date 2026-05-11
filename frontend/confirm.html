@@ -277,27 +277,25 @@
 
       <!-- Vehicle Form -->
       <div class="form-section">
-        <div class="form-section-title">
+        <div class="form-section-title" id="f-section-title">
           🚗 Vehicle Information
         </div>
         <div class="form-grid">
           <div class="form-group full">
-            <label class="form-label">Owner Name *</label>
+            <label class="form-label" id="f-owner-label">Owner Name *</label>
             <input class="form-input" id="f-owner" type="text" placeholder="e.g. Juan dela Cruz" required>
           </div>
           <div class="form-group">
             <label class="form-label">License Plate *</label>
             <input class="form-input" id="f-plate" type="text" placeholder="e.g. ABC 1234" required style="text-transform:uppercase;">
           </div>
-          <div class="form-group">
+          <div class="form-group" id="f-type-wrap">
             <label class="form-label">Vehicle Type *</label>
             <select class="form-select" id="f-type">
               <option value="">Select type</option>
               <option value="car">🚗 Car / Sedan</option>
               <option value="suv">🚙 SUV / Van</option>
-              <option value="motorcycle">🏍️ Motorcycle</option>
               <option value="truck">🚛 Truck / Pickup</option>
-              <option value="disabled">♿ Disabled Vehicle</option>
             </select>
           </div>
         </div>

@@ -51,6 +51,12 @@ export const ParkingAPI = {
 
   completeExit: (spotId) =>
     request('POST', `/parking/spots/${spotId}/complete-exit`),
+
+  pwdRequest: (spotId, mobileNumber, action, vehicleInfo, idFront, idBack) =>
+    request('POST', `/parking/spots/${spotId}/pwd-request`, { mobileNumber, action, vehicleInfo, idFront, idBack }),
+
+  pwdStatus: (requestId) =>
+    request('GET', `/parking/pwd-request/${requestId}/status`),
 };
 
 export const UserAPI = {
@@ -126,6 +132,18 @@ export const StaffAPI = {
 
   analytics: () =>
     request('GET', '/staff/analytics', null, true),
+
+  pwdCount: () =>
+    request('GET', '/staff/pwd-requests/count', null, true),
+
+  pwdRequests: () =>
+    request('GET', '/staff/pwd-requests', null, true),
+
+  pwdApprove: (requestId) =>
+    request('POST', `/staff/pwd-requests/${requestId}/approve`, {}, true),
+
+  pwdDecline: (requestId) =>
+    request('POST', `/staff/pwd-requests/${requestId}/decline`, {}, true),
 };
 
 export function toast(message, type = 'info', duration = 3500) {

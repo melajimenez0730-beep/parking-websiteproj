@@ -4,6 +4,7 @@ const router     = express.Router();
 const ParkingSpot  = require('../models/ParkingSpot');
 const Transaction  = require('../models/Transaction');
 const User         = require('../models/User');
+const PWDRequest   = require('../models/PWDRequest');
 
 function r(start, end) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -17,6 +18,7 @@ const PRIORITY = {
 };
 
 const SOFT_LOCK_MS        = 3 * 60 * 1000;
+const PWD_LOCK_MS         = 30 * 1000;
 const RESERVED_TIMEOUT_MS = 30 * 60 * 1000;
 const EXIT_GRACE_MS       = 30 * 1000;
 
@@ -199,7 +201,7 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
     const lockId    = uuid();
     const expiresAt = new Date(Date.now() + SOFT_LOCK_MS);
 
-    const updated = await ParkingSpot.findOneAndUpdate(
+    let updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version, status: 'available' },
       {
         $set: {
@@ -214,8 +216,28 @@ router.post('/spots/:spotId/soft-lock', async (req, res) => {
     );
     console.log('[soft-lock] update result:', updated ? 'success' : 'null (OCC conflict)');
 
+    // OCC conflict — retry once: re-read and try again if spot is still available
     if (!updated) {
-      return res.status(409).json({ error: 'Concurrent reservation detected. Please refresh and try again.' });
+      const fresh = await ParkingSpot.findOne({ spotId });
+      if (!fresh || fresh.status !== 'available') {
+        return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+      }
+      updated = await ParkingSpot.findOneAndUpdate(
+        { spotId, version: fresh.version, status: 'available' },
+        {
+          $set: {
+            status: 'soft_locked',
+            mobileNumber: mobileNumber || null,
+            softLock: { userId, lockId, expiresAt, mobileNumber: mobileNumber || null },
+            vehicle: vehicleInfo || {},
+          },
+          $inc: { version: 1 },
+        },
+        { new: true }
+      );
+      if (!updated) {
+        return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+      }
     }
 
     try {
@@ -348,7 +370,7 @@ router.post('/spots/:spotId/park-now', async (req, res) => {
       return res.status(409).json({ error: 'Spot is not available', currentStatus: spot.status });
     }
 
-    const updated = await ParkingSpot.findOneAndUpdate(
+    let updated = await ParkingSpot.findOneAndUpdate(
       { spotId, version: spot.version, status: 'available' },
       {
         $set: { status: 'occupied', mobileNumber, occupiedAt: new Date(), vehicle: vehicleInfo || {}, softLock: null },
@@ -357,8 +379,23 @@ router.post('/spots/:spotId/park-now', async (req, res) => {
       { new: true }
     );
 
+    // OCC conflict — retry once
     if (!updated) {
-      return res.status(409).json({ error: 'Concurrent update detected. Please try again.' });
+      const fresh = await ParkingSpot.findOne({ spotId });
+      if (!fresh || fresh.status !== 'available') {
+        return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+      }
+      updated = await ParkingSpot.findOneAndUpdate(
+        { spotId, version: fresh.version, status: 'available' },
+        {
+          $set: { status: 'occupied', mobileNumber, occupiedAt: new Date(), vehicle: vehicleInfo || {}, softLock: null },
+          $inc: { version: 1 },
+        },
+        { new: true }
+      );
+      if (!updated) {
+        return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+      }
     }
 
     const transactionId = uuid();
@@ -495,6 +532,125 @@ router.post('/spots/:spotId/complete-exit', async (req, res) => {
   } catch (err) {
     console.error('[complete-exit]', err);
     res.status(500).json({ error: 'Failed to complete exit.' });
+  }
+});
+
+// POST /spots/:spotId/pwd-request — create PWD verification request + soft-lock spot for 30s
+router.post('/spots/:spotId/pwd-request', async (req, res) => {
+  const { mobileNumber, action = 'reserve', vehicleInfo, idFront, idBack } = req.body || {};
+  const { spotId } = req.params;
+
+  if (!mobileNumber)        return res.status(400).json({ error: 'mobileNumber is required' });
+  if (!idFront || !idBack)  return res.status(400).json({ error: 'Both PWD ID photos are required' });
+  if (!['reserve', 'park_now'].includes(action)) return res.status(400).json({ error: 'action must be reserve or park_now' });
+
+  try {
+    const user = await User.findOne({ mobileNumber });
+    if (user?.lockoutUntil && user.lockoutUntil > new Date()) {
+      return res.status(403).json({ error: 'Account is locked.', lockoutUntil: user.lockoutUntil });
+    }
+    if (await hasActiveSpot(mobileNumber)) {
+      return res.status(409).json({ error: 'This mobile number already has an active parking spot.' });
+    }
+
+    try { await releaseExpired(); } catch (e) { console.warn('[pwd-request] releaseExpired failed:', e.message); }
+
+    const spot = await ParkingSpot.findOne({ spotId });
+    if (!spot)                      return res.status(404).json({ error: 'Spot not found' });
+    if (spot.spotType !== 'PWD')    return res.status(400).json({ error: 'This spot is not a PWD spot' });
+    if (spot.status !== 'available') return res.status(409).json({ error: 'Spot is not available', currentStatus: spot.status });
+
+    const requestId = uuid();
+    const lockId    = uuid();
+    const expiresAt = new Date(Date.now() + PWD_LOCK_MS);
+
+    let updated = await ParkingSpot.findOneAndUpdate(
+      { spotId, version: spot.version, status: 'available' },
+      {
+        $set: {
+          status: 'soft_locked', mobileNumber,
+          softLock: { userId: mobileNumber, lockId, expiresAt, mobileNumber },
+          vehicle: vehicleInfo || {},
+        },
+        $inc: { version: 1 },
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      const fresh = await ParkingSpot.findOne({ spotId });
+      if (!fresh || fresh.status !== 'available') {
+        return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+      }
+      const freshExpires = new Date(Date.now() + PWD_LOCK_MS);
+      updated = await ParkingSpot.findOneAndUpdate(
+        { spotId, version: fresh.version, status: 'available' },
+        {
+          $set: {
+            status: 'soft_locked', mobileNumber,
+            softLock: { userId: mobileNumber, lockId, expiresAt: freshExpires, mobileNumber },
+            vehicle: vehicleInfo || {},
+          },
+          $inc: { version: 1 },
+        },
+        { new: true }
+      );
+      if (!updated) return res.status(409).json({ error: 'Spot was just taken by another user.', spotTaken: true });
+    }
+
+    await PWDRequest.create({
+      requestId, spotId,
+      floor_number: spot.floor_number,
+      spotNum:      spot.spotNum,
+      mobileNumber, action,
+      vehicleInfo: vehicleInfo || {},
+      idFront, idBack,
+      status: 'pending',
+      lockId, userId: mobileNumber,
+      expiresAt,
+    });
+
+    await Transaction.create({
+      transactionId: uuid(),
+      floor_number:  spot.floor_number,
+      spotId, spotNum: spot.spotNum,
+      type: 'soft_lock',
+      vehicle: vehicleInfo || {},
+      userId: mobileNumber,
+      notes: 'PWD ID verification pending',
+    });
+
+    res.json({ success: true, requestId, expiresAt, expiresInSeconds: 30 });
+  } catch (err) {
+    console.error('[pwd-request] ERROR:', err);
+    res.status(500).json({ error: 'Failed to create PWD request', detail: err.message });
+  }
+});
+
+// GET /pwd-request/:requestId/status — poll approval status; auto-decline if expired
+router.get('/pwd-request/:requestId/status', async (req, res) => {
+  const { requestId } = req.params;
+  try {
+    const pwdReq = await PWDRequest.findOne({ requestId });
+    if (!pwdReq) return res.status(404).json({ error: 'PWD request not found' });
+
+    if (pwdReq.status === 'pending' && pwdReq.expiresAt < new Date()) {
+      pwdReq.status = 'declined';
+      await pwdReq.save();
+      const spot = await ParkingSpot.findOne({ spotId: pwdReq.spotId });
+      if (spot && spot.status === 'soft_locked' && spot.softLock?.lockId === pwdReq.lockId) {
+        await ParkingSpot.findOneAndUpdate(
+          { _id: spot._id, version: spot.version },
+          { $set: { status: 'available', softLock: null, mobileNumber: null, vehicle: null }, $inc: { version: 1 } }
+        );
+      }
+      return res.json({ status: 'declined', reason: 'timeout' });
+    }
+
+    res.json({ status: pwdReq.status, spotId: pwdReq.spotId, action: pwdReq.action });
+  } catch (err) {
+    console.error('[pwd-status] ERROR:', err);
+    res.status(500).json({ error: 'Failed to get PWD request status' });
   }
 });
 

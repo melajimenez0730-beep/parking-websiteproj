@@ -377,17 +377,17 @@
     .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 7px rgba(239,68,68,0.5); }
     .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
 
-    /* PWD — blue always, regardless of status */
-    .spot-cell.pwd                              { border-color: var(--blue-border) !important; border-style: solid !important; }
-    .spot-cell.pwd .spot-dot                    { background: var(--blue) !important; box-shadow: 0 0 8px rgba(59,130,246,0.65) !important; }
-    .spot-cell.pwd .spot-id                     { color: var(--blue) !important; }
-    .spot-cell.pwd[data-status="available"]:hover { background: var(--blue-bg) !important; border-color: var(--blue) !important; }
+    /* PWD — blue when available, status color when taken (icon identifies type) */
+    .spot-cell.pwd[data-status="available"]              { border-color: var(--blue-border); border-style: solid; }
+    .spot-cell.pwd[data-status="available"] .spot-dot    { background: var(--blue); box-shadow: 0 0 8px rgba(59,130,246,0.65); }
+    .spot-cell.pwd[data-status="available"] .spot-id     { color: var(--blue); }
+    .spot-cell.pwd[data-status="available"]:hover        { background: var(--blue-bg); border-color: var(--blue); }
 
-    /* Motorcycle — purple always, regardless of status */
-    .spot-cell.moto                              { border-color: var(--moto-border) !important; border-style: solid !important; }
-    .spot-cell.moto .spot-dot                    { background: var(--moto) !important; box-shadow: 0 0 8px rgba(168,85,247,0.65) !important; }
-    .spot-cell.moto .spot-id                     { color: var(--moto) !important; }
-    .spot-cell.moto[data-status="available"]:hover { background: var(--moto-bg) !important; border-color: var(--moto) !important; }
+    /* Motorcycle — purple when available, status color when taken (icon identifies type) */
+    .spot-cell.moto[data-status="available"]             { border-color: var(--moto-border); border-style: solid; }
+    .spot-cell.moto[data-status="available"] .spot-dot   { background: var(--moto); box-shadow: 0 0 8px rgba(168,85,247,0.65); }
+    .spot-cell.moto[data-status="available"] .spot-id    { color: var(--moto); }
+    .spot-cell.moto[data-status="available"]:hover       { background: var(--moto-bg); border-color: var(--moto); }
 
     /* ── Mall Entrance header row (mirrors grid flex to land label above C-D) ── */
     .entrance-bar {
@@ -551,6 +551,42 @@
     }
     .spot-cell[data-status="exiting"] .spot-id { color: #fbbf24 !important; }
 
+    /* Smart Recommendation filter buttons */
+    .rec-filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-3);
+      background: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: all var(--t-base);
+      margin-bottom: 2px;
+      text-align: left;
+    }
+    .rec-filter-btn:hover  { background: var(--bg-card); color: var(--text-2); }
+    .rec-filter-btn.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); font-weight: 700; }
+
+    /* Spotlight dimming */
+    .grid-spotlight .island-label,
+    .grid-spotlight .island-internal-drive,
+    .grid-spotlight .aisle-label,
+    .grid-spotlight .aisle-track { opacity: 0.2; }
+    .grid-spotlight .spot-cell   { opacity: 0.3; }
+    .grid-spotlight .spot-cell.spotlight-hit { opacity: 1; }
+    .grid-spotlight .spot-cell.spotlight-hit[data-status="available"]:not(.pwd):not(.moto) {
+      box-shadow: 0 0 16px rgba(34,197,94,0.75) !important;
+      border-style: solid !important;
+    }
+    .grid-spotlight .spot-cell.spotlight-hit.pwd  { box-shadow: 0 0 16px rgba(59,130,246,0.75) !important; }
+    .grid-spotlight .spot-cell.spotlight-hit.moto { box-shadow: 0 0 16px rgba(168,85,247,0.75) !important; }
+
     /* Spot hover tooltip */
     #spot-tooltip {
       position: fixed;
@@ -586,6 +622,24 @@
         <button class="btn btn-ghost" style="min-width:90px;" id="exit-cancel-btn">Cancel</button>
         <button class="btn btn-full" id="exit-confirm-btn"
           style="background:var(--red);border-color:var(--red);color:#fff;flex:1;">✓ Complete Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Check-In Modal ── -->
+  <div class="reserve-modal-backdrop" id="checkin-modal">
+    <div class="reserve-modal" style="max-width:360px;">
+      <div class="modal-spot-badge" id="checkin-modal-badge"
+        style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.35);color:var(--amber);margin-bottom:18px;">P--</div>
+      <div class="modal-title" style="margin-bottom:6px;">Check In to Your Spot</div>
+      <div class="modal-sub" id="checkin-modal-sub" style="margin-bottom:20px;">Floor — · Your reserved spot</div>
+      <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.25);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:24px;font-size:12px;color:var(--text-3);line-height:1.5;">
+        🚗 You're here! Tapping <strong style="color:var(--green);">Check In</strong> will mark this spot as occupied and start your parking session.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" style="min-width:90px;" id="checkin-cancel-btn">Cancel</button>
+        <button class="btn btn-full" id="checkin-confirm-btn"
+          style="background:var(--green);border-color:var(--green);color:#fff;flex:1;">🚗 Check In</button>
       </div>
     </div>
   </div>
@@ -667,6 +721,104 @@
         </div>
       </div>
 
+      <!-- Step 3: Vehicle Information -->
+      <div id="action-step-3" style="display:none;">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+          <div class="modal-spot-badge" id="mv-badge" style="margin-bottom:0;flex-shrink:0;">P--</div>
+          <div>
+            <div class="modal-title" id="mv-title" style="margin-bottom:2px;">Vehicle Info</div>
+            <div class="modal-sub" id="mv-sub" style="margin-bottom:0;">Fill in your vehicle details</div>
+          </div>
+        </div>
+
+        <!-- Standard / PWD form -->
+        <div id="mv-standard">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Owner Name</label>
+            <input id="mv-owner" type="text" placeholder="Full name"
+              style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font);outline:none;transition:border-color 0.15s;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-default)'" />
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">License Plate</label>
+            <input id="mv-plate" type="text" placeholder="ABC 1234"
+              style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font-mono);outline:none;transition:border-color 0.15s;text-transform:uppercase;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-default)'" />
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Vehicle Type</label>
+            <select id="mv-type"
+              style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font);outline:none;transition:border-color 0.15s;cursor:pointer;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-default)'">
+              <option value="car">🚗 Car / Sedan</option>
+              <option value="suv">🚙 SUV / Van</option>
+              <option value="truck">🚛 Truck / Pickup</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Motorcycle form -->
+        <div id="mv-moto" style="display:none;">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Rider Name</label>
+            <input id="mv-moto-name" type="text" placeholder="Full name"
+              style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font);outline:none;transition:border-color 0.15s;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-default)'" />
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">License Plate</label>
+            <input id="mv-moto-plate" type="text" placeholder="ABC 1234"
+              style="width:100%;box-sizing:border-box;padding:11px 13px;background:var(--bg-input);border:1px solid var(--border-default);border-radius:var(--r-sm);color:var(--text-1);font-size:14px;font-family:var(--font-mono);outline:none;transition:border-color 0.15s;text-transform:uppercase;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border-default)'" />
+          </div>
+        </div>
+
+        <!-- PWD ID Upload (shown only for PWD spots) -->
+        <div id="mv-pwd-upload" style="display:none;margin-top:4px;">
+          <div style="border-top:1px solid var(--border-subtle);margin:0 0 14px;"></div>
+          <div style="font-size:10px;color:var(--text-4);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;margin-bottom:6px;">♿ PWD ID Verification</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:12px;line-height:1.4;">Upload clear photos of your PWD ID. Staff will verify before confirming your spot.</div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Front of ID</label>
+            <input type="file" id="mv-id-front" accept="image/*" style="display:none;">
+            <button type="button" id="mv-id-front-btn" onclick="document.getElementById('mv-id-front').click()"
+              style="width:100%;padding:10px;background:var(--bg-input);border:1px dashed var(--border-default);border-radius:var(--r-sm);color:var(--text-3);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.15s;text-align:center;">
+              📷 Tap to upload front
+            </button>
+            <div id="mv-id-front-preview" style="display:none;margin-top:6px;text-align:center;">
+              <img id="mv-id-front-img" style="max-width:100%;max-height:80px;border-radius:var(--r-sm);border:1px solid var(--green-border);" alt="Front ID">
+            </div>
+          </div>
+          <div style="margin-bottom:4px;">
+            <label style="font-size:10px;color:var(--text-4);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Back of ID</label>
+            <input type="file" id="mv-id-back" accept="image/*" style="display:none;">
+            <button type="button" id="mv-id-back-btn" onclick="document.getElementById('mv-id-back').click()"
+              style="width:100%;padding:10px;background:var(--bg-input);border:1px dashed var(--border-default);border-radius:var(--r-sm);color:var(--text-3);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.15s;text-align:center;">
+              📷 Tap to upload back
+            </button>
+            <div id="mv-id-back-preview" style="display:none;margin-top:6px;text-align:center;">
+              <img id="mv-id-back-img" style="max-width:100%;max-height:80px;border-radius:var(--r-sm);border:1px solid var(--green-border);" alt="Back ID">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:16px;">
+          <button class="btn btn-ghost" style="min-width:90px;" id="mv-back-btn">← Back</button>
+          <button class="btn btn-primary btn-full" id="mv-submit-btn">Confirm →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Waiting for PWD staff approval -->
+      <div id="action-step-4" style="display:none;text-align:center;padding:8px 0;">
+        <div style="width:64px;height:64px;background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;">♿</div>
+        <div class="modal-title" style="margin-bottom:6px;">Waiting for Staff Approval</div>
+        <div class="modal-sub" style="margin-bottom:24px;">A staff member is reviewing your PWD ID</div>
+        <div id="pwd-countdown" style="font-size:52px;font-weight:700;font-family:var(--font-mono);color:var(--blue);margin-bottom:4px;letter-spacing:-2px;">30</div>
+        <div style="font-size:12px;color:var(--text-4);margin-bottom:24px;">seconds remaining</div>
+        <div class="spinner" style="margin:0 auto 16px;width:24px;height:24px;border-width:3px;"></div>
+        <div style="font-size:12px;color:var(--text-3);">Please do not close this window</div>
+      </div>
+
     </div>
   </div>
 
@@ -726,21 +878,14 @@
         </div>
       </div>
 
-      <!-- Smart sort -->
+      <!-- Smart Recommendations -->
       <div class="sidebar-sec">
-        <div class="sidebar-sec-title">Smart Sort</div>
-        <button class="sort-chip active" data-criteria="entrance">🚪 Near Entrance</button>
-        <button class="sort-chip"        data-criteria="exit">⬅️ Near Exit</button>
-        <button class="sort-chip"        data-criteria="grocery">🛒 Near Grocery</button>
-        <button class="sort-chip"        data-criteria="disability">♿ Disability</button>
-      </div>
-
-      <!-- Recommendations -->
-      <div class="sidebar-sec">
-        <div class="sidebar-sec-title">Best Spots <span id="rec-floor-label" style="color:var(--accent);font-size:9px;">(Floor 1)</span></div>
-        <div class="rec-wrap" id="recommend-bar">
-          <span style="font-size:11px;color:var(--text-4);">Loading…</span>
-        </div>
+        <div class="sidebar-sec-title">Smart Recommendations</div>
+        <button class="rec-filter-btn" data-spotlight="entrance">🚪 Nearest to Entrance</button>
+        <button class="rec-filter-btn" data-spotlight="exit">⬅️ Nearest to Exit</button>
+        <button class="rec-filter-btn" data-spotlight="pwd">♿ Available PWD</button>
+        <button class="rec-filter-btn" data-spotlight="easy">🟢 Easy Park</button>
+        <div id="spotlight-hint" style="display:none;font-size:10px;color:var(--text-4);margin-top:8px;line-height:1.5;padding:0 2px;"></div>
       </div>
 
       <!-- Legend -->

@@ -21,7 +21,7 @@ export function initConfirm(ParkingAPI, toast) {
     return;
   }
 
-  const { spotId, spotNum, floor, row, col, features, lockId, expiresAt, userId } = reservation;
+  const { spotId, spotNum, floor, row, col, features, lockId, expiresAt, userId, spotType, vehicleInfo } = reservation;
 
   const padNum   = String(spotNum).padStart(3, '0');
   const spotLabel = `P${padNum}`;
@@ -34,6 +34,23 @@ export function initConfirm(ParkingAPI, toast) {
   featsEl.innerHTML = (features || []).map(f =>
     `<span class="pill pill-default" style="font-size:11px;">${FEATURE_META[f]?.icon || ''} ${FEATURE_META[f]?.label || f}</span>`
   ).join('');
+
+  // Adapt form for motorcycle spots
+  const isMoto = spotType === 'Motorcycle';
+  if (isMoto) {
+    document.getElementById('f-owner-label').textContent = 'Rider Name *';
+    document.getElementById('f-section-title').textContent = '🏍️ Motorcycle Information';
+    document.getElementById('f-type-wrap').style.display = 'none';
+  }
+
+  // Pre-fill from vehicleInfo collected in the map modal
+  if (vehicleInfo) {
+    document.getElementById('f-owner').value = vehicleInfo.owner || '';
+    document.getElementById('f-plate').value = vehicleInfo.plate || '';
+    if (!isMoto && vehicleInfo.type) {
+      document.getElementById('f-type').value = vehicleInfo.type;
+    }
+  }
 
   const timerEl    = document.getElementById('timer-display');
   const timerBar   = document.getElementById('timer-bar');
@@ -84,12 +101,16 @@ export function initConfirm(ParkingAPI, toast) {
   function getVehicleInfo() {
     const owner = document.getElementById('f-owner').value.trim();
     const plate = document.getElementById('f-plate').value.trim().toUpperCase();
-    const type  = document.getElementById('f-type').value;
 
-    if (!owner) { toast('Please enter the owner name.', 'error'); return null; }
+    if (!owner) { toast('Please enter the ' + (isMoto ? 'rider' : 'owner') + ' name.', 'error'); return null; }
     if (!plate) { toast('Please enter the license plate.', 'error'); return null; }
-    if (!type)  { toast('Please select a vehicle type.', 'error'); return null; }
 
+    if (isMoto) {
+      return { owner, plate, type: 'motorcycle' };
+    }
+
+    const type = document.getElementById('f-type').value;
+    if (!type) { toast('Please select a vehicle type.', 'error'); return null; }
     return { owner, plate, type };
   }
 
