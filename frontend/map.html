@@ -3,34 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ParkSmart — Facility Monitor</title>
+  <link rel="icon" type="image/png" href="images/cyberspace.png">
+  <title>PrimeSpot — Facility Monitor</title>
   <link rel="stylesheet" href="css/main.css">
   <style>
     :root {
-      --blue:       #3b82f6;
-      --blue-border: rgba(59,130,246,0.4);
-      --blue-bg:    rgba(59,130,246,0.08);
-      --moto:       #a855f7;
-      --moto-border: rgba(168,85,247,0.4);
-      --moto-bg:    rgba(168,85,247,0.08);
+      --blue:        #00B8FF;
+      --blue-border: rgba(0,184,255,0.40);
+      --blue-bg:     rgba(0,184,255,0.08);
+      --moto:        #bf5fff;
+      --moto-border: rgba(191,95,255,0.40);
+      --moto-bg:     rgba(191,95,255,0.08);
     }
 
     html, body { height: 100%; overflow: hidden; }
 
     /* ── Two-pane dashboard ── */
-    .dash-layout {
-      display: flex;
-      height: 100vh;
-    }
+    .dash-layout { display: flex; height: 100vh; }
 
     /* ════════════════════════════════════════
-       LEFT SIDEBAR
+       LEFT SIDEBAR — glassmorphic panel
     ════════════════════════════════════════ */
     .dash-sidebar {
       width: 210px;
       flex-shrink: 0;
-      background: var(--bg-surface);
-      border-right: 1px solid var(--border-subtle);
+      background: rgba(4, 6, 16, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 237, 255, 0.12);
+      box-shadow: 2px 0 24px rgba(0, 0, 0, 0.50), inset -1px 0 0 rgba(0,237,255,0.05);
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -39,7 +40,7 @@
 
     .sidebar-logo {
       padding: 18px 14px 14px;
-      border-bottom: 1px solid var(--border-faint);
+      border-bottom: 1px solid rgba(0,237,255,0.08);
       flex-shrink: 0;
     }
     .sidebar-logo a {
@@ -48,21 +49,26 @@
       gap: 8px;
       text-decoration: none;
       color: var(--text-1);
+      font-family: var(--font-display);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
     }
 
     .sidebar-sec {
       padding: 12px 14px;
-      border-bottom: 1px solid var(--border-faint);
+      border-bottom: 1px solid rgba(0,237,255,0.06);
       flex-shrink: 0;
     }
     .sidebar-sec-title {
+      font-family: var(--font-display);
       font-size: 9px;
-      font-weight: 800;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--text-4);
+      letter-spacing: 2px;
+      color: rgba(0, 237, 255, 0.60);
+      text-shadow: 0 0 12px rgba(0, 237, 255, 0.40);
       margin-bottom: 10px;
     }
 
@@ -71,35 +77,40 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 3px 0;
+      padding: 4px 0;
       font-size: 12px;
     }
-    .stat-row span:first-child { color: var(--text-3); }
-    .stat-val { font-family: var(--font-mono); font-weight: 700; font-size: 14px; }
-    .stat-val.green { color: var(--green); }
-    .stat-val.amber { color: var(--amber); }
-    .stat-val.red   { color: var(--red); }
+    .stat-row span:first-child { color: #7AAABF; }
+    .stat-val { font-family: var(--font-mono); font-weight: 400; font-size: 14px; }
+    .stat-val.green { color: var(--green); text-shadow: 0 0 10px rgba(0,255,157,0.55); }
+    .stat-val.amber { color: var(--amber); text-shadow: 0 0 10px rgba(255,210,0,0.55); }
+    .stat-val.red   { color: var(--red);   text-shadow: 0 0 10px rgba(255,45,107,0.55); }
 
     /* Floor mini cards */
     .floor-mini {
-      background: var(--bg-card);
-      border: 1px solid var(--border-faint);
+      background: rgba(8, 12, 28, 0.60);
+      border: 1px solid rgba(0,237,255,0.10);
       border-radius: var(--r-sm);
       padding: 8px 9px;
       margin-bottom: 5px;
       cursor: pointer;
-      transition: border-color var(--t-base);
+      transition: all var(--t-base);
     }
     .floor-mini:last-child { margin-bottom: 0; }
-    .floor-mini.active { border-color: var(--accent-border); background: var(--accent-dim); }
+    .floor-mini:hover { border-color: rgba(0,237,255,0.25); background: rgba(0,237,255,0.05); }
+    .floor-mini.active {
+      border-color: rgba(0,237,255,0.45);
+      background: rgba(0,237,255,0.08);
+      box-shadow: 0 0 12px rgba(0,237,255,0.15), inset 0 0 10px rgba(0,237,255,0.05);
+    }
     .floor-mini-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-    .floor-mini-name { font-size: 11px; font-weight: 600; color: var(--text-2); }
-    .floor-mini-avail { font-size: 10px; font-family: var(--font-mono); color: var(--green); }
-    .floor-mini-bar { height: 3px; background: var(--border-subtle); border-radius: 2px; overflow: hidden; }
+    .floor-mini-name { font-size: 11px; font-weight: 600; color: #C8E8FF; letter-spacing: 0.3px; }
+    .floor-mini-avail { font-size: 10px; font-family: var(--font-mono); color: var(--green); text-shadow: 0 0 8px rgba(0,255,157,0.50); }
+    .floor-mini-bar { height: 2px; background: rgba(0,237,255,0.10); border-radius: 2px; overflow: hidden; }
     .floor-mini-fill { height: 100%; border-radius: 2px; transition: width 0.5s, background 0.5s; }
 
-    /* Sort chips */
-    .sort-chip {
+    /* Sort / rec filter chips */
+    .sort-chip, .rec-filter-btn {
       display: flex;
       align-items: center;
       gap: 6px;
@@ -108,7 +119,7 @@
       border-radius: var(--r-sm);
       font-size: 12px;
       font-weight: 500;
-      color: var(--text-3);
+      color: #7AAABF;
       background: none;
       border: 1px solid transparent;
       cursor: pointer;
@@ -117,18 +128,28 @@
       margin-bottom: 2px;
       text-align: left;
     }
-    .sort-chip:hover  { background: var(--bg-card); color: var(--text-2); }
-    .sort-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .sort-chip:hover, .rec-filter-btn:hover {
+      background: rgba(0,237,255,0.06);
+      color: #C8E8FF;
+      border-color: rgba(0,237,255,0.14);
+    }
+    .sort-chip.active, .rec-filter-btn.active {
+      background: rgba(0,237,255,0.10);
+      border-color: rgba(0,237,255,0.35);
+      color: var(--accent);
+      font-weight: 600;
+      text-shadow: 0 0 8px rgba(0,237,255,0.45);
+    }
 
-    /* Recommendations */
+    /* Recommendation chips */
     .rec-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
     .rec-chip {
       display: inline-flex;
       align-items: center;
       gap: 3px;
       padding: 3px 9px;
-      background: var(--accent-dim);
-      border: 1px solid var(--accent-border);
+      background: rgba(0,237,255,0.08);
+      border: 1px solid rgba(0,237,255,0.30);
       border-radius: var(--r-full);
       font-size: 11px;
       font-weight: 700;
@@ -136,8 +157,9 @@
       font-family: var(--font-mono);
       cursor: pointer;
       transition: all var(--t-base);
+      text-shadow: 0 0 8px rgba(0,237,255,0.45);
     }
-    .rec-chip:hover { background: rgba(232,123,61,0.25); }
+    .rec-chip:hover { background: rgba(0,237,255,0.16); box-shadow: 0 0 12px rgba(0,237,255,0.25); }
     .rec-chip .rank { font-size: 9px; opacity: 0.6; }
 
     /* Legend */
@@ -146,8 +168,8 @@
       align-items: center;
       gap: 7px;
       font-size: 11px;
-      color: var(--text-3);
-      padding: 2px 0;
+      color: #7AAABF;
+      padding: 3px 0;
     }
     .legend-dot-sm {
       width: 9px;
@@ -160,7 +182,7 @@
     .sidebar-footer {
       padding: 10px 14px;
       margin-top: auto;
-      border-top: 1px solid var(--border-faint);
+      border-top: 1px solid rgba(0,237,255,0.08);
       display: flex;
       align-items: center;
       gap: 8px;
@@ -183,13 +205,29 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 20px;
-      background: var(--bg-surface);
-      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(4, 6, 16, 0.78);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(0,237,255,0.10);
+      box-shadow: 0 1px 0 rgba(0,237,255,0.06), 0 4px 24px rgba(0,0,0,0.40);
       flex-shrink: 0;
       gap: 12px;
     }
-    .dash-topbar h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; color: var(--text-1); }
-    .dash-topbar-sub { font-size: 11px; color: var(--text-4); font-family: var(--font-mono); margin-top: 1px; }
+    .dash-topbar h1 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-1);
+      text-shadow: 0 0 20px rgba(0,237,255,0.20);
+    }
+    .dash-topbar-sub {
+      font-size: 11px;
+      color: rgba(0,237,255,0.45);
+      font-family: var(--font-mono);
+      margin-top: 1px;
+    }
     .dash-topbar-right { display: flex; align-items: center; gap: 8px; }
 
     /* Total availability badge */
@@ -205,6 +243,8 @@
       font-weight: 600;
       color: var(--green);
       font-family: var(--font-mono);
+      text-shadow: 0 0 10px rgba(0,255,157,0.50);
+      box-shadow: 0 0 12px rgba(0,255,157,0.12);
     }
 
     /* ── Facility grid — fills the full viewport ── */
@@ -236,11 +276,13 @@
 
     .island-label {
       text-align: center;
+      font-family: var(--font-display);
       font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--text-4);
+      color: rgba(0, 237, 255, 0.38);
+      text-shadow: 0 0 8px rgba(0, 237, 255, 0.25);
       padding: 0 0 6px;
       flex-shrink: 0;
     }
@@ -267,12 +309,12 @@
       align-items: center;
       justify-content: center;
       font-size: 7px;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--text-4);
-      border-top: 1px dashed var(--border-subtle);
-      border-bottom: 1px dashed var(--border-subtle);
+      color: rgba(0, 237, 255, 0.25);
+      border-top: 1px dashed rgba(0,237,255,0.12);
+      border-bottom: 1px dashed rgba(0,237,255,0.12);
       margin: 4px 0;
     }
 
@@ -298,10 +340,10 @@
     }
     .aisle-label {
       font-size: 8px;
-      font-weight: 800;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: var(--text-4);
+      color: rgba(0, 237, 255, 0.28);
       writing-mode: vertical-rl;
       padding: 8px 0;
     }
@@ -313,9 +355,10 @@
       flex: 1;
       min-width: 0;
       min-height: 0;
-      border: 1px solid var(--border-default);
+      border: 1px solid rgba(0,237,255,0.12);
       border-radius: 5px;
-      background: var(--bg-elevated, #1a1a22);
+      background: rgba(6, 10, 22, 0.70);
+      backdrop-filter: blur(4px);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -356,38 +399,38 @@
 
     /* Available */
     .spot-cell[data-status="available"] { border-color: var(--green-border); border-style: dashed; }
-    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 7px rgba(34,197,94,0.6); }
-    .spot-cell[data-status="available"] .spot-id  { color: var(--green); }
+    .spot-cell[data-status="available"] .spot-dot { background: var(--green); box-shadow: 0 0 8px rgba(0,255,157,0.70); }
+    .spot-cell[data-status="available"] .spot-id  { color: var(--green); text-shadow: 0 0 6px rgba(0,255,157,0.55); }
     .spot-cell[data-status="available"]:hover {
       border-style: solid; border-color: var(--green);
-      background: var(--green-bg); transform: scale(1.08); z-index: 5;
-      box-shadow: 0 3px 12px rgba(34,197,94,0.3);
+      background: rgba(0,255,157,0.07); transform: scale(1.08); z-index: 5;
+      box-shadow: 0 0 18px rgba(0,255,157,0.35);
     }
 
     /* Reserved / soft_locked */
     .spot-cell[data-status="reserved"],
     .spot-cell[data-status="soft_locked"] { border-color: var(--amber-border); cursor: default; }
     .spot-cell[data-status="reserved"] .spot-dot,
-    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 7px rgba(245,158,11,0.5); }
+    .spot-cell[data-status="soft_locked"] .spot-dot { background: var(--amber); box-shadow: 0 0 8px rgba(255,210,0,0.65); }
     .spot-cell[data-status="reserved"] .spot-id,
-    .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); }
+    .spot-cell[data-status="soft_locked"] .spot-id  { color: var(--amber); text-shadow: 0 0 6px rgba(255,210,0,0.55); }
 
     /* Occupied */
     .spot-cell[data-status="occupied"] { border-color: var(--red-border); cursor: default; }
-    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 7px rgba(239,68,68,0.5); }
-    .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); }
+    .spot-cell[data-status="occupied"] .spot-dot { background: var(--red); box-shadow: 0 0 8px rgba(255,45,107,0.70); }
+    .spot-cell[data-status="occupied"] .spot-id  { color: var(--red); text-shadow: 0 0 6px rgba(255,45,107,0.55); }
 
-    /* PWD — blue when available, status color when taken (icon identifies type) */
+    /* PWD — blue when available */
     .spot-cell.pwd[data-status="available"]              { border-color: var(--blue-border); border-style: solid; }
-    .spot-cell.pwd[data-status="available"] .spot-dot    { background: var(--blue); box-shadow: 0 0 8px rgba(59,130,246,0.65); }
-    .spot-cell.pwd[data-status="available"] .spot-id     { color: var(--blue); }
-    .spot-cell.pwd[data-status="available"]:hover        { background: var(--blue-bg); border-color: var(--blue); }
+    .spot-cell.pwd[data-status="available"] .spot-dot    { background: var(--blue); box-shadow: 0 0 9px rgba(0,184,255,0.70); }
+    .spot-cell.pwd[data-status="available"] .spot-id     { color: var(--blue); text-shadow: 0 0 6px rgba(0,184,255,0.55); }
+    .spot-cell.pwd[data-status="available"]:hover        { background: var(--blue-bg); border-color: var(--blue); box-shadow: 0 0 14px rgba(0,184,255,0.30); }
 
-    /* Motorcycle — purple when available, status color when taken (icon identifies type) */
+    /* Motorcycle — purple when available */
     .spot-cell.moto[data-status="available"]             { border-color: var(--moto-border); border-style: solid; }
-    .spot-cell.moto[data-status="available"] .spot-dot   { background: var(--moto); box-shadow: 0 0 8px rgba(168,85,247,0.65); }
-    .spot-cell.moto[data-status="available"] .spot-id    { color: var(--moto); }
-    .spot-cell.moto[data-status="available"]:hover       { background: var(--moto-bg); border-color: var(--moto); }
+    .spot-cell.moto[data-status="available"] .spot-dot   { background: var(--moto); box-shadow: 0 0 9px rgba(191,95,255,0.70); }
+    .spot-cell.moto[data-status="available"] .spot-id    { color: var(--moto); text-shadow: 0 0 6px rgba(191,95,255,0.55); }
+    .spot-cell.moto[data-status="available"]:hover       { background: var(--moto-bg); border-color: var(--moto); box-shadow: 0 0 14px rgba(191,95,255,0.30); }
 
     /* ── Mall Entrance header row (mirrors grid flex to land label above C-D) ── */
     .entrance-bar {
@@ -503,10 +546,10 @@
       margin-bottom: 20px;
     }
     .modal-title { font-size: 20px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; }
-    .modal-sub   { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
+    .modal-sub   { font-size: 13px; color: #7AAABF; margin-bottom: 20px; }
     .modal-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
     .modal-info-cell { background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); padding: 12px; }
-    .modal-info-cell-label { font-size: 11px; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    .modal-info-cell-label { font-size: 11px; color: rgba(0,237,255,0.50); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; font-family: var(--font-display); }
     .modal-info-cell-value { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-mono); }
     .modal-features { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
     .modal-actions  { display: flex; gap: 10px; }
@@ -551,27 +594,7 @@
     }
     .spot-cell[data-status="exiting"] .spot-id { color: #fbbf24 !important; }
 
-    /* Smart Recommendation filter buttons */
-    .rec-filter-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      width: 100%;
-      padding: 6px 8px;
-      border-radius: var(--r-sm);
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-3);
-      background: none;
-      border: 1px solid transparent;
-      cursor: pointer;
-      font-family: var(--font);
-      transition: all var(--t-base);
-      margin-bottom: 2px;
-      text-align: left;
-    }
-    .rec-filter-btn:hover  { background: var(--bg-card); color: var(--text-2); }
-    .rec-filter-btn.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); font-weight: 700; }
+    /* rec-filter-btn shares styles with sort-chip above */
 
     /* Spotlight dimming */
     .grid-spotlight .island-label,
@@ -831,7 +854,7 @@
       <div class="sidebar-logo">
         <a href="index.html">
           <div class="logo-icon">P</div>
-          ParkSmart
+          PrimeSpot
         </a>
       </div>
 

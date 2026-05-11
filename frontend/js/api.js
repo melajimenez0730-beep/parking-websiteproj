@@ -115,7 +115,7 @@ export const StaffAPI = {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `parksmart-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `primespot-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -3,10 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ParkSmart — Distributed Parking Management</title>
+  <link rel="icon" type="image/png" href="images/cyberspace.png">
+  <title>PrimeSpot — Distributed Parking Management</title>
   <meta name="description" content="A distributed parking management system with real-time availability, intelligent spot selection, and zone-sharded MongoDB.">
   <link rel="stylesheet" href="css/main.css">
   <style>
+    body {
+      background-image: url('images/indexbg2.jpg');
+      background-size: 100% auto;
+      background-repeat: no-repeat;
+      background-attachment: scroll;
+      background-position: top center;
+    }
+
     .arch-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -74,7 +83,7 @@
     <div class="nav-inner">
       <a href="index.html" class="logo">
         <div class="logo-icon">P</div>
-        ParkSmart
+        PrimeSpot
       </a>
       <div class="nav-links">
         <a href="my-reservation.html" class="btn btn-ghost btn-sm" id="my-res-nav" style="display:none;">My Reservation</a>
@@ -135,12 +144,12 @@
   </section>
 
   <!-- ─── Features ─────────────────────────────────────────────────── -->
-  <section class="section">
+  <section class="section" style="padding-top: max(80px, calc(56vw - 760px));">
     <div class="container">
       <div style="text-align:center; margin-bottom:48px;">
         <span class="section-label">Core Features</span>
         <h2 class="section-title">Everything you need to manage parking</h2>
-        <p class="section-sub" style="margin: 0 auto;">From real-time spot visibility to distributed data across 3 shards, ParkSmart handles it all.</p>
+        <p class="section-sub" style="margin: 0 auto;">From real-time spot visibility to distributed data across 3 shards, PrimeSpot handles it all.</p>
       </div>
 
       <div class="features-grid">
@@ -267,7 +276,7 @@
       <div class="footer-inner">
         <div class="logo" style="opacity:0.6;">
           <div class="logo-icon" style="width:26px;height:26px;font-size:12px;">P</div>
-          ParkSmart
+          PrimeSpot
         </div>
         <span class="footer-copy">Distributed Parking Management System · MongoDB Sharding Demo</span>
         <div class="footer-links">
