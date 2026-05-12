@@ -170,22 +170,4 @@ export function toast(message, type = 'info', duration = 3500) {
   }, duration);
 }
 
-export function initTheme() {
-  const saved = localStorage.getItem('ps_theme') || 'dark';
-  if (saved === 'light') document.body.classList.add('light-mode');
-
-  document.querySelectorAll('.theme-toggle').forEach(btn => {
-    btn.title     = saved === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
-    btn.textContent = saved === 'light' ? '🌙' : '☀️';
-
-    btn.addEventListener('click', () => {
-      const isLight = document.body.classList.toggle('light-mode');
-      const next    = isLight ? 'light' : 'dark';
-      localStorage.setItem('ps_theme', next);
-      document.querySelectorAll('.theme-toggle').forEach(b => {
-        b.textContent = isLight ? '🌙' : '☀️';
-        b.title       = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-      });
-    });
-  });
-}
+export function initTheme() {}
