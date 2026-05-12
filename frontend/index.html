@@ -3,86 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="images/cyberspace.png">
   <title>PrimeSpot — Distributed Parking Management</title>
+  <link rel="icon" type="image/png" href="images/retro.png">
   <meta name="description" content="A distributed parking management system with real-time availability, intelligent spot selection, and zone-sharded MongoDB.">
   <link rel="stylesheet" href="css/main.css">
   <style>
-    body {
-      background-image: url('images/indexbg2.jpg');
-      background-size: 100% auto;
-      background-repeat: no-repeat;
-      background-attachment: scroll;
-      background-position: top center;
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      opacity: 0.8;
     }
 
-    .arch-grid {
+    .floor-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--border-subtle);
+      gap: 16px;
+    }
+    .floor-card {
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--r-lg);
-      overflow: hidden;
-      margin-top: 48px;
+      padding: 28px;
     }
-    .arch-cell {
-      background: var(--bg-card);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .floor-num {
+      font-family: var(--font-mono);
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      text-shadow: 0 0 24px rgba(124,79,255,0.40);
     }
-    .arch-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-4);
-    }
-    .arch-name { font-size: 15px; font-weight: 600; color: var(--text-1); }
-    .arch-desc { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+    .floor-name  { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-4); margin: 4px 0 14px; }
+    .floor-title { font-size: 16px; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+    .floor-desc  { font-size: 13px; color: var(--text-3); line-height: 1.6; }
+    .floor-tags  { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+    .floor-tag   { font-size: 11px; padding: 3px 10px; border-radius: 100px; background: rgba(124,79,255,0.08); border: 1px solid rgba(124,79,255,0.18); color: #9B75FF; }
 
-    .arch-arrow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      color: var(--text-4);
-      background: var(--bg-card);
-      padding: 24px;
-    }
-
-    .shard-row {
-      display: flex;
+    .rate-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-top: 16px;
     }
-    .shard-node {
-      flex: 1;
-      background: var(--bg-surface);
+    .rate-card {
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--r-md);
-      padding: 16px;
+      border-radius: var(--r-lg);
+      padding: 28px 20px;
       text-align: center;
     }
-    .shard-node-num { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); }
-    .shard-node-label { font-size: 11px; color: var(--text-4); margin-top: 4px; }
-    .shard-node-floor { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .rate-price { font-family: var(--font-mono); font-size: 28px; font-weight: 700; color: var(--accent); }
+    .rate-unit  { font-size: 11px; color: var(--text-4); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .rate-label { font-size: 13px; color: var(--text-2); margin-top: 8px; font-weight: 500; }
+
+    .faq-list { display: flex; flex-direction: column; gap: 10px; max-width: 720px; margin: 0 auto; }
+    .faq-item { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--r-md); padding: 20px 24px; }
+    .faq-q { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+    .faq-a { font-size: 13px; color: var(--text-3); line-height: 1.7; margin: 0; }
 
     @media (max-width: 768px) {
-      .arch-grid { grid-template-columns: 1fr; }
-      .arch-arrow { display: none; }
+      .floor-grid { grid-template-columns: 1fr; }
+      .rate-grid  { grid-template-columns: repeat(2, 1fr); }
     }
+  /* Lock landing page to dark regardless of theme toggle */
+  html, body { background: #08070C !important; }
+  html {
+    --bg-body:       #08070C !important;
+    --bg-surface:    #0D0B16 !important;
+    --bg-card:       #0F0D1A !important;
+    --bg-input:      #130F1E !important;
+    --text-1:        #EDE8FF !important;
+    --text-2:        #8E80B8 !important;
+    --text-3:        #4E4470 !important;
+    --text-4:        #2E2A42 !important;
+    --border-subtle: rgba(124,79,255,0.12) !important;
+    --border-faint:  rgba(124,79,255,0.06) !important;
+  }
+  body::before { display: none; }
+
+  .video-bg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.28;
+    pointer-events: none;
+  }
+  .video-bg-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8,7,12,0.62),
+                radial-gradient(ellipse 70% 50% at 50% 0%, rgba(124,79,255,0.10) 0%, transparent 60%);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .nav { z-index: 200 !important; }
+  .hero, .section, .footer { position: relative; z-index: 2; background: transparent !important; }
   </style>
 </head>
 <body>
+  <video class="video-bg" autoplay muted loop playsinline>
+    <source src="images/indexbg.mp4" type="video/mp4">
+  </video>
+  <div class="video-bg-overlay"></div>
 
   <!-- ─── Navigation ───────────────────────────────────────────────── -->
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="logo">
-        <div class="logo-icon">P</div>
+        <img src="images/picon.png" class="logo-icon" style="object-fit:contain;background:none;border-radius:var(--r-sm);">
         PrimeSpot
       </a>
       <div class="nav-links">
@@ -101,18 +136,17 @@
     <div class="container">
       <div class="badge">
         <span class="status-dot"></span>
-        Live · Distributed Architecture · MongoDB Sharding
+        Open Now · Real-Time Availability · 3 Floors
       </div>
 
       <h1 class="hero-title">
-        Smart Parking,<br>
-        <span class="gradient-text">Simplified.</span>
+        Reserve Your Spot<br>
+        <span class="gradient-text">Before You Arrive.</span>
       </h1>
 
       <p class="hero-sub">
-        A zone-sharded distributed parking management system. Each floor level maps
-        to a dedicated MongoDB shard — instant single-shard reads, transparent
-        cross-shard aggregation for staff insights.
+        Skip the hunt. Browse live availability across all 3 floors, pick your exact spot,
+        and lock it in under a minute — so you arrive knowing exactly where to go.
       </p>
 
       <div class="hero-ctas">
@@ -120,138 +154,213 @@
           <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C5.2 0 3 2.2 3 5c0 3.5 5 11 5 11s5-7.5 5-11c0-2.8-2.2-5-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/></svg>
           Find Available Spot
         </a>
+        <a href="#how-it-works" class="btn btn-ghost btn-lg">How It Works ↓</a>
       </div>
 
       <div class="hero-stats">
         <div class="hero-stat">
           <span class="hero-stat-num">3</span>
-          <span class="hero-stat-label">Floor Shards</span>
+          <span class="hero-stat-label">Floors</span>
         </div>
         <div class="hero-stat">
           <span class="hero-stat-num">36</span>
           <span class="hero-stat-label">Total Spots</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-num">OCC</span>
-          <span class="hero-stat-label">Concurrency</span>
+          <span class="hero-stat-num">24/7</span>
+          <span class="hero-stat-label">Open Daily</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-num">3 min</span>
-          <span class="hero-stat-label">Soft Lock</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Features ─────────────────────────────────────────────────── -->
-  <section class="section" style="padding-top: max(80px, calc(56vw - 760px));">
-    <div class="container">
-      <div style="text-align:center; margin-bottom:48px;">
-        <span class="section-label">Core Features</span>
-        <h2 class="section-title">Everything you need to manage parking</h2>
-        <p class="section-sub" style="margin: 0 auto;">From real-time spot visibility to distributed data across 3 shards, PrimeSpot handles it all.</p>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">🗺️</div>
-          <div class="feature-title">Interactive Parking Map</div>
-          <p class="feature-desc">Visual 3×4 grid layout per floor with live status updates. Hover spots to see vehicle info and availability.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🧠</div>
-          <div class="feature-title">Smart Spot Selection</div>
-          <p class="feature-desc">Algorithm-driven recommendations: Nearest to Entrance, Exit, Grocery, or Disability-accessible spots.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">⚡</div>
-          <div class="feature-title">Optimistic Concurrency</div>
-          <p class="feature-desc">Version-based OCC prevents double-booking. Conflicting writes are detected and rejected at the database level.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🔒</div>
-          <div class="feature-title">3-Minute Soft Lock</div>
-          <p class="feature-desc">Spots are held for 3 minutes during checkout. Expired locks auto-release so other users can book immediately.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🗄️</div>
-          <div class="feature-title">Floor-Level Sharding</div>
-          <p class="feature-desc">MongoDB zone sharding partitions data by <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent)">floor_number</code>. Each shard holds exactly one floor's data.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <div class="feature-title">Staff Dashboard</div>
-          <p class="feature-desc">Role-authenticated dashboard with cross-shard transaction log, floor-level stats, and real-time occupancy overview.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─── Architecture ─────────────────────────────────────────────── -->
-  <section class="section" style="background: var(--bg-surface); border-top: 1px solid var(--border-faint); border-bottom: 1px solid var(--border-faint);">
-    <div class="container">
-      <span class="section-label">System Architecture</span>
-      <h2 class="section-title">How the distributed cluster works</h2>
-      <p class="section-sub">A mongos query router sits in front of three zone-sharded replica sets, routing every query to exactly the right floor-level shard.</p>
-
-      <div class="arch-grid">
-        <div class="arch-cell">
-          <div class="arch-label">Query Router</div>
-          <div class="arch-name">Mongos</div>
-          <div class="arch-desc">Receives all queries from the API. Uses the shard key (<code style="font-family:var(--font-mono);color:var(--accent);font-size:12px">floor_number</code>) to route single-floor reads to one shard and fan-out cross-floor aggregations.</div>
-        </div>
-        <div class="arch-arrow">→</div>
-        <div class="arch-cell">
-          <div class="arch-label">Config Servers</div>
-          <div class="arch-name">3-Node Replica Set</div>
-          <div class="arch-desc">Store cluster metadata, zone ranges, and shard mappings. The mongos reads these to build its routing table on startup.</div>
-        </div>
-      </div>
-
-      <div class="shard-row">
-        <div class="shard-node">
-          <div class="shard-node-num">1</div>
-          <div class="shard-node-label">Shard · zone_floor1</div>
-          <div class="shard-node-floor">Floor Level 1 data</div>
-        </div>
-        <div class="shard-node">
-          <div class="shard-node-num">2</div>
-          <div class="shard-node-label">Shard · zone_floor2</div>
-          <div class="shard-node-floor">Floor Level 2 data</div>
-        </div>
-        <div class="shard-node">
-          <div class="shard-node-num">3</div>
-          <div class="shard-node-label">Shard · zone_floor3</div>
-          <div class="shard-node-floor">Floor Level 3 data</div>
+          <span class="hero-stat-num">&lt;1 min</span>
+          <span class="hero-stat-label">To Reserve</span>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ─── How It Works ─────────────────────────────────────────────── -->
-  <section class="section">
+  <section class="section" id="how-it-works">
     <div class="container">
-      <div style="margin-bottom:48px;">
-        <span class="section-label">User Flow</span>
-        <h2 class="section-title">Reserve a spot in 4 steps</h2>
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">Simple Process</span>
+        <h2 class="section-title">Park in 4 easy steps</h2>
+        <p class="section-sub" style="margin:0 auto;">No app download. No account needed. Just pick, lock, and park.</p>
       </div>
-
       <div class="steps">
         <div class="step">
-          <div class="step-title">Choose a Floor</div>
-          <p class="step-desc">Select Level 1, 2, or 3. The system fetches live availability from the corresponding shard.</p>
+          <div class="step-num">Step 01</div>
+          <div class="step-title">Browse the Map</div>
+          <p class="step-desc">Open the interactive parking map. See every available and occupied spot across all 3 floors, updated in real time.</p>
         </div>
         <div class="step">
-          <div class="step-title">Select a Spot</div>
-          <p class="step-desc">Browse the interactive grid or use smart-sort to find the closest spot to your destination.</p>
+          <div class="step-num">Step 02</div>
+          <div class="step-title">Choose Your Spot</div>
+          <p class="step-desc">Click any open spot, or use Smart Sort to find the best one near the entrance, grocery area, exit, or PWD access.</p>
         </div>
         <div class="step">
-          <div class="step-title">Soft Lock (3 min)</div>
-          <p class="step-desc">Your spot is held with an OCC-protected soft lock while you complete your vehicle details.</p>
+          <div class="step-num">Step 03</div>
+          <div class="step-title">Enter Your Details</div>
+          <p class="step-desc">Your spot is held for 3 minutes while you fill in your name, plate number, and vehicle type. No one else can book it during this window.</p>
         </div>
         <div class="step">
-          <div class="step-title">Confirm & Park</div>
-          <p class="step-desc">Submit your booking. The system atomically converts the soft lock to a confirmed reservation.</p>
+          <div class="step-num">Step 04</div>
+          <div class="step-title">Arrive & Check In</div>
+          <p class="step-desc">Drive to your reserved spot and tap "I've Arrived" on your reservation page. You're marked active and good to go.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── What We Offer ────────────────────────────────────────────── -->
+  <section class="section" style="background: var(--bg-surface); border-top: 1px solid var(--border-faint); border-bottom: 1px solid var(--border-faint);">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">What We Offer</span>
+        <h2 class="section-title">Everything you need, nothing you don't</h2>
+        <p class="section-sub" style="margin:0 auto;">Parking should be painless. Here's what PrimeSpot does to make it that way.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <div class="feature-title">Live Parking Map</div>
+          <p class="feature-desc">A visual grid of all 36 spots in real time. Green is open, red is taken — no guessing, no surprises when you arrive.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Reserve in Under a Minute</div>
+          <p class="feature-desc">From opening the map to a confirmed booking in less than 60 seconds. No forms, no queuing, no phone calls needed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">3-Minute Spot Hold</div>
+          <p class="feature-desc">Select a spot and it's locked for you for 3 full minutes — enough time to complete your booking without anyone else taking it.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧭</div>
+          <div class="feature-title">Smart Spot Finder</div>
+          <p class="feature-desc">Filter by proximity — nearest to the entrance, grocery area, exit ramp, or PWD-accessible route. The system picks the best match.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <div class="feature-title">Booking Receipt</div>
+          <p class="feature-desc">Every confirmed reservation gets a unique Transaction ID. Keep it handy — staff can pull up your booking in seconds if needed.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👨‍💼</div>
+          <div class="feature-title">Live Staff Monitoring</div>
+          <p class="feature-desc">On-site staff watches a real-time dashboard of the entire facility. Help is always close if anything goes wrong.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Our Floors ───────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">The Facility</span>
+        <h2 class="section-title">3 floors, 12 spots each</h2>
+        <p class="section-sub" style="margin:0 auto;">Each floor is laid out in a 3×4 grid. Pick the one that suits your visit best.</p>
+      </div>
+      <div class="floor-grid">
+        <div class="floor-card">
+          <div class="floor-num">1</div>
+          <div class="floor-name">Ground Level</div>
+          <div class="floor-title">Best for Quick Trips</div>
+          <p class="floor-desc">Located right at the main entrance. Ideal if you're carrying groceries or need the fastest route in and out of the facility.</p>
+          <div class="floor-tags">
+            <span class="floor-tag">🚪 Near Entrance</span>
+            <span class="floor-tag">🛒 Grocery Access</span>
+            <span class="floor-tag">12 Spots</span>
+          </div>
+        </div>
+        <div class="floor-card">
+          <div class="floor-num">2</div>
+          <div class="floor-name">Mid Level</div>
+          <div class="floor-title">Most Popular Floor</div>
+          <p class="floor-desc">A balanced floor with easy reach to all building amenities. The go-to choice for most visitors — great for general use and longer stays.</p>
+          <div class="floor-tags">
+            <span class="floor-tag">♿ PWD Access</span>
+            <span class="floor-tag">⭐ Most Booked</span>
+            <span class="floor-tag">12 Spots</span>
+          </div>
+        </div>
+        <div class="floor-card">
+          <div class="floor-num">3</div>
+          <div class="floor-name">Upper Level</div>
+          <div class="floor-title">Quieter, More Space</div>
+          <p class="floor-desc">Less foot traffic and more breathing room between cars. A good option for larger vehicles or when the lower floors are filling up.</p>
+          <div class="floor-tags">
+            <span class="floor-tag">⬅️ Near Exit</span>
+            <span class="floor-tag">🚛 Larger Vehicles</span>
+            <span class="floor-tag">12 Spots</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Rates ─────────────────────────────────────────────────────── -->
+  <section class="section" style="background: var(--bg-surface); border-top: 1px solid var(--border-faint); border-bottom: 1px solid var(--border-faint);">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">Parking Rates</span>
+        <h2 class="section-title">Simple, transparent pricing</h2>
+        <p class="section-sub" style="margin:0 auto;">No hidden fees. Same rate across all floors and vehicle types.</p>
+      </div>
+      <div class="rate-grid">
+        <div class="rate-card">
+          <div class="rate-price">Free</div>
+          <div class="rate-unit">First 15 min</div>
+          <div class="rate-label">Grace Period</div>
+        </div>
+        <div class="rate-card" style="border-color: rgba(124,79,255,0.35); background: rgba(124,79,255,0.06);">
+          <div class="rate-price">₱50</div>
+          <div class="rate-unit">First hour</div>
+          <div class="rate-label">Standard Rate</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-price">₱30</div>
+          <div class="rate-unit">Per hour after</div>
+          <div class="rate-label">Succeeding Hours</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-price">₱250</div>
+          <div class="rate-unit">Per 24 hours</div>
+          <div class="rate-label">Daily Maximum</div>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:12px; color:var(--text-4); margin-top:20px;">Payment collected upon exit. Rates are in Philippine Peso (₱).</p>
+    </div>
+  </section>
+
+  <!-- ─── FAQ ──────────────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="container">
+      <div style="text-align:center; margin-bottom:48px;">
+        <span class="section-label">FAQ</span>
+        <h2 class="section-title">Common questions</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q">How long does the 3-minute hold last?</div>
+          <p class="faq-a">Once you select a spot on the map, it's locked exclusively for you for exactly 3 minutes. If you don't confirm in that window, the hold is released and the spot becomes available again. Just go back to the map and pick again.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Can I cancel my reservation?</div>
+          <p class="faq-a">Yes. From your reservation page, you can cancel any time before you check in. The spot is immediately released. If you've already checked in, please speak to on-site staff directly.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What happens if my reservation expires before I arrive?</div>
+          <p class="faq-a">Expired reservations are auto-released. Head back to the map, select a new spot, and re-book. If you have a Transaction ID from the expired booking and need assistance, show it to staff at the entrance.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Which floor should I choose?</div>
+          <p class="faq-a">Floor 1 is best if you're heading to the grocery area or want the quickest walk from the entrance. Floor 2 is the most popular all-rounder. Floor 3 is best for larger vehicles or when the lower floors are nearly full.</p>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What vehicle types are accepted?</div>
+          <p class="faq-a">We accept cars and sedans, SUVs and vans, motorcycles, trucks and pickups, and vehicles with PWD (Persons with Disability) plates. Select your type accurately during booking so the system can assign the right spot.</p>
         </div>
       </div>
     </div>
@@ -260,11 +369,11 @@
   <!-- ─── CTA Banner ────────────────────────────────────────────────── -->
   <section class="section" style="padding: 60px 0;">
     <div class="container" style="text-align:center;">
-      <div class="card" style="max-width:640px; margin:0 auto; background: linear-gradient(135deg, rgba(232,123,61,0.06) 0%, transparent 60%); border-color: var(--accent-border);">
+      <div class="card" style="max-width:640px; margin:0 auto; background: linear-gradient(135deg, rgba(124,79,255,0.08) 0%, transparent 60%); border-color: var(--accent-border);">
         <h2 style="font-size:28px; font-weight:700; margin-bottom:12px; letter-spacing:-0.5px;">Ready to park smarter?</h2>
-        <p style="color:var(--text-3); margin-bottom:28px; font-size:15px;">View real-time availability across all 3 floor levels and reserve your spot in under a minute.</p>
+        <p style="color:var(--text-3); margin-bottom:28px; font-size:15px;">View live availability across all 3 floors and reserve your spot in under a minute.</p>
         <a href="map.html" class="btn btn-primary btn-lg" style="margin:0 auto;">
-          Open Parking Map →
+          Find Available Spot →
         </a>
       </div>
     </div>
@@ -278,7 +387,7 @@
           <div class="logo-icon" style="width:26px;height:26px;font-size:12px;">P</div>
           PrimeSpot
         </div>
-        <span class="footer-copy">Distributed Parking Management System · MongoDB Sharding Demo</span>
+        <span class="footer-copy">PrimeSpot Parking Complex · Open 24/7 · All Floors</span>
         <div class="footer-links">
           <a href="map.html">Map</a>
           <a href="my-reservation.html">My Reservation</a>

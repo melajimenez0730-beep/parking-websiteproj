@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="images/cyberspace.png">
   <title>PrimeSpot — My Reservation</title>
+  <link rel="icon" type="image/png" href="images/retro.png">
   <link rel="stylesheet" href="css/main.css">
   <style>
     .res-layout {
@@ -14,19 +14,19 @@
     }
 
     .res-card {
-      background: rgba(6, 10, 22, 0.78);
+      background: rgba(14,11,22, 0.78);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(0,237,255,0.14);
-      border-top: 2px solid rgba(0,237,255,0.40);
+      border: 1px solid rgba(124,79,255,0.14);
+      border-top: 2px solid rgba(124,79,255,0.40);
       border-radius: var(--r-xl);
       overflow: hidden;
-      box-shadow: 0 0 40px rgba(0,237,255,0.06), var(--shadow-xl);
+      box-shadow: 0 0 40px rgba(124,79,255,0.06), var(--shadow-xl);
     }
 
     .res-card-top {
       padding: 28px 28px 24px;
-      border-bottom: 1px solid rgba(0,237,255,0.08);
+      border-bottom: 1px solid rgba(124,79,255,0.08);
       display: flex;
       align-items: flex-start;
       gap: 18px;
@@ -50,11 +50,11 @@
     }
 
     .res-spot-badge.confirmed {
-      background: rgba(0,237,255,0.08);
-      border-color: rgba(0,237,255,0.35);
+      background: rgba(124,79,255,0.08);
+      border-color: rgba(124,79,255,0.35);
       color: var(--accent);
-      text-shadow: 0 0 12px rgba(0,237,255,0.60);
-      box-shadow: 0 0 16px rgba(0,237,255,0.15);
+      text-shadow: 0 0 12px rgba(124,79,255,0.60);
+      box-shadow: 0 0 16px rgba(124,79,255,0.15);
     }
 
     .res-detail-grid {
@@ -62,12 +62,12 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       padding: 24px 28px;
-      border-bottom: 1px solid rgba(0,237,255,0.08);
+      border-bottom: 1px solid rgba(124,79,255,0.08);
     }
 
     .res-detail-cell {
-      background: rgba(0,237,255,0.04);
-      border: 1px solid rgba(0,237,255,0.10);
+      background: rgba(124,79,255,0.04);
+      border: 1px solid rgba(124,79,255,0.10);
       border-radius: var(--r-sm);
       padding: 12px;
     }
@@ -75,24 +75,24 @@
     .res-detail-label {
       font-family: var(--font-display);
       font-size: 10px; font-weight: 700;
-      color: rgba(0,237,255,0.50);
+      color: rgba(124,79,255,0.50);
       text-transform: uppercase; letter-spacing: 1px;
       margin-bottom: 4px;
-      text-shadow: 0 0 8px rgba(0,237,255,0.30);
+      text-shadow: 0 0 8px rgba(124,79,255,0.30);
     }
     .res-detail-value { font-size: 14px; font-weight: 600; color: var(--text-1); font-family: var(--font-mono); }
 
     .res-vehicle-section {
       padding: 20px 28px;
-      border-bottom: 1px solid rgba(0,237,255,0.08);
+      border-bottom: 1px solid rgba(124,79,255,0.08);
     }
 
     .res-vehicle-title {
       font-family: var(--font-display);
       font-size: 11px; font-weight: 700;
-      color: rgba(0,237,255,0.55);
+      color: rgba(124,79,255,0.55);
       text-transform: uppercase; letter-spacing: 1.2px;
-      text-shadow: 0 0 10px rgba(0,237,255,0.30);
+      text-shadow: 0 0 10px rgba(124,79,255,0.30);
       margin-bottom: 12px;
     }
 
@@ -104,24 +104,24 @@
       padding: 4px 0;
     }
 
-    .res-vehicle-row span:first-child { color: #7AAABF; }
+    .res-vehicle-row span:first-child { color: #8E80B8; }
     .res-vehicle-row span:last-child  { color: var(--text-1); font-family: var(--font-mono); font-weight: 500; }
 
     .res-footer {
       display: flex;
       gap: 10px;
       padding: 20px 28px;
-      background: rgba(4, 6, 16, 0.50);
+      background: rgba(11,9,17, 0.50);
     }
 
     .txn-box {
-      background: rgba(0,237,255,0.04);
-      border: 1px solid rgba(0,237,255,0.12);
+      background: rgba(124,79,255,0.04);
+      border: 1px solid rgba(124,79,255,0.12);
       border-radius: var(--r-sm);
       padding: 10px 14px;
       font-family: var(--font-mono);
       font-size: 11px;
-      color: rgba(0,237,255,0.45);
+      color: rgba(124,79,255,0.45);
       word-break: break-all;
       margin: 16px 28px;
     }
@@ -152,7 +152,7 @@
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="logo">
-        <div class="logo-icon">P</div>
+        <img src="images/picon.png" class="logo-icon" style="object-fit:contain;background:none;border-radius:var(--r-sm);">
         PrimeSpot
       </a>
       <div class="nav-links">
@@ -181,7 +181,7 @@
   <style>
     .checkin-section {
       padding: 16px 28px;
-      border-bottom: 1px solid rgba(0,237,255,0.08);
+      border-bottom: 1px solid rgba(124,79,255,0.08);
     }
     .parked-badge {
       display: inline-flex; align-items: center; gap: 6px;
